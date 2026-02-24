@@ -1,0 +1,17 @@
+{
+  "name": "workflow-core",
+  "version": "1.0.0",
+  "description": "Workflow automation engine core library",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "hypium"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
