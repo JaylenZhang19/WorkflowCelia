@@ -23,6 +23,7 @@ struct WorkflowsList {
   }
 
   loadWorkflows() {
+    // Workflow 1: Get current date and log
     const workflow1 = createWorkflow('Get Current Date');
     workflow1.description = '获取当前日期和时间';
     workflow1.color = '#007AFF';
@@ -32,6 +33,7 @@ struct WorkflowsList {
     ];
     workflow1.actions[1].inputValues = { message: '日期已获取', level: 'info' };
 
+    // Workflow 2: Get battery status
     const workflow2 = createWorkflow('Battery Status');
     workflow2.description = '获取电池状态';
     workflow2.color = '#34C759';
@@ -39,6 +41,7 @@ struct WorkflowsList {
       createActionNode('get_battery_level', '获取电量')
     ];
 
+    // Workflow 3: Get location
     const workflow3 = createWorkflow('Current Location');
     workflow3.description = '获取当前位置';
     workflow3.color = '#FF9500';
@@ -48,6 +51,7 @@ struct WorkflowsList {
     ];
     workflow3.actions[1].inputValues = { message: '位置已获取', level: 'info' };
 
+    // Workflow 4: Get photos
     const workflow4 = createWorkflow('Get Photos');
     workflow4.description = '获取最新照片';
     workflow4.color = '#FF2D55';
@@ -56,7 +60,30 @@ struct WorkflowsList {
     ];
     workflow4.actions[0].inputValues = { count: 3 };
 
-    this.workflows = [workflow1, workflow2, workflow3, workflow4];
+    // Workflow 5: Calendar events
+    const workflow5 = createWorkflow('Calendar Events');
+    workflow5.description = '获取即将到来的日程';
+    workflow5.color = '#FF3B30';
+    workflow5.actions = [
+      createActionNode('get_calendar_events', '获取日程')
+    ];
+    workflow5.actions[0].inputValues = { count: 5 };
+
+    // Workflow 6: Today's events
+    const workflow6 = createWorkflow("Today's Schedule");
+    workflow6.description = '获取今天的日程安排';
+    workflow6.color = '#5856D6';
+    workflow6.actions = [
+      createActionNode('get_today_events', '今日日程'),
+      createActionNode('show_notification', '显示通知')
+    ];
+    workflow6.actions[1].inputValues = { 
+      title: '今日日程', 
+      body: '已获取今天的日程安排',
+      priority: 'default'
+    };
+
+    this.workflows = [workflow1, workflow2, workflow3, workflow4, workflow5, workflow6];
   }
 
   build() {

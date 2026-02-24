@@ -1,8 +1,11 @@
 /**
  * System Actions
+ * Using providers for system capabilities
  */
+import { BatteryProvider, LocationProvider, NotificationProvider } from '..';
 import { ActionDefinition, ActionExecutor, ActionResult, createActionDefinition, IWorkflowContext } from '../models/Action';
 import { DataType } from '../models/DataType';
+
 
 export class GetCurrentDateAction implements ActionExecutor {
   private definition: ActionDefinition;
@@ -61,13 +64,23 @@ export class GetBatteryLevelAction implements ActionExecutor {
   }
 
   async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
-    return {
-      success: true,
-      outputs: {
-        level: 75,
-        charging: false
-      }
-    };
+    try {
+      const provider = BatteryProvider.getInstance();
+      const status = await provider.getBatteryStatus();
+      
+      return {
+        success: true,
+        outputs: {
+          level: status.level,
+          charging: status.charging
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to get battery status: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }
 
@@ -96,20 +109,28 @@ export class GetCurrentLocationAction implements ActionExecutor {
   }
 
   async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
-    const location = {
-      latitude: 40.7128,
-      longitude: -74.0060,
-      accuracy: inputs.highAccuracy ? 5 : 50,
-      timestamp: Date.now()
-    };
-
-    return {
-      success: true,
-      outputs: {
-        location,
-        address: 'New York, NY, USA'
-      }
-    };
+    try {
+      const provider = LocationProvider.getInstance();
+      const location = await provider.getCurrentLocation(inputs.highAccuracy || false);
+      const address = await provider.getAddressFromLocation(location);
+      
+      return {
+        success: true,
+        outputs: {
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy
+          },
+          address: address.formatted
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to get location: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }
 
@@ -137,9 +158,21 @@ export class ShowNotificationAction implements ActionExecutor {
   }
 
   async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
-    const { title, body, priority = 'default' } = inputs;
-    context.log('info', `Notification: ${title} - ${body} (${priority})`);
-    return { success: true, outputs: {} };
+    try {
+      const provider = NotificationProvider.getInstance();
+      await provider.showNotification({
+        title: inputs.title,
+        body: inputs.body,
+        priority: inputs.priority as 'low' | 'default' | 'high' || 'default'
+      });
+      
+      return { success: true, outputs: {} };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to show notification: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }
 

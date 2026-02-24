@@ -1,8 +1,11 @@
 /**
  * Photos Actions
+ * Using providers for photo capabilities
  */
+import { PhotosProvider } from '..';
 import { ActionDefinition, ActionExecutor, ActionResult, createActionDefinition, IWorkflowContext } from '../models/Action';
 import { DataType } from '../models/DataType';
+
 
 export class GetLatestPhotosAction implements ActionExecutor {
   private definition: ActionDefinition;
@@ -26,21 +29,62 @@ export class GetLatestPhotosAction implements ActionExecutor {
   }
 
   async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
-    const { count = 1 } = inputs;
-    const photos = [];
-    for (let i = 0; i < count; i++) {
-      photos.push({
-        id: `photo_${Date.now()}_${i}`,
-        filename: `photo_${i}.jpg`,
-        width: 1920,
-        height: 1080,
-        dateTaken: Date.now() - i * 3600000,
-        location: { latitude: 40.7128, longitude: -74.0060 },
-        album: 'Recents'
-      });
+    try {
+      const provider = PhotosProvider.getInstance();
+      const count = inputs.count || 1;
+      const photos = await provider.getLatestPhotos(count);
+      
+      context.log('info', `Retrieved ${photos.length} photos`);
+      return { success: true, outputs: { photos } };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to get photos: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
-    context.log('info', `Retrieved ${photos.length} photos`);
-    return { success: true, outputs: { photos } };
+  }
+}
+
+export class GetPhotosFromAlbumAction implements ActionExecutor {
+  private definition: ActionDefinition;
+
+  constructor() {
+    this.definition = createActionDefinition({
+      id: 'get_photos_from_album',
+      name: 'Get Photos From Album',
+      description: 'Get all photos from a specific album',
+      category: 'photos',
+      inputs: [
+        { name: 'albumName', type: DataType.TEXT, required: true, description: 'Name of the album' }
+      ],
+      outputs: [{ name: 'photos', type: DataType.IMAGE, required: true, isArray: true, description: 'Array of photo objects' }],
+      version: '1.0.0'
+    });
+  }
+
+  getDefinition(): ActionDefinition {
+    return this.definition;
+  }
+
+  async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
+    try {
+      const provider = PhotosProvider.getInstance();
+      const albumName = inputs.albumName;
+      
+      if (!albumName) {
+        return { success: false, error: 'Album name is required' };
+      }
+      
+      const photos = await provider.getPhotosFromAlbum(albumName);
+      context.log('info', `Retrieved ${photos.length} photos from album "${albumName}"`);
+      
+      return { success: true, outputs: { photos } };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to get photos: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }
 
@@ -54,10 +98,10 @@ export class SaveToAlbumAction implements ActionExecutor {
       description: 'Save photos or videos to a specific album',
       category: 'photos',
       inputs: [
-        { name: 'media', type: DataType.IMAGE, required: true, isArray: true, description: 'Media to save' },
+        { name: 'photo', type: DataType.IMAGE, required: true, description: 'Photo to save' },
         { name: 'albumName', type: DataType.TEXT, required: false, default: 'Recents', description: 'Album name' }
       ],
-      outputs: [{ name: 'savedCount', type: DataType.NUMBER, required: true, description: 'Number of items saved' }],
+      outputs: [{ name: 'savedPhoto', type: DataType.IMAGE, required: true, description: 'The saved photo' }],
       version: '1.0.0'
     });
   }
@@ -67,16 +111,26 @@ export class SaveToAlbumAction implements ActionExecutor {
   }
 
   async execute(inputs: Record<string, any>, context: IWorkflowContext): Promise<ActionResult> {
-    const { media = [], albumName = 'Recents' } = inputs;
-    if (!Array.isArray(media)) {
-      return { success: false, error: 'Input must be an array of media' };
+    try {
+      const provider = PhotosProvider.getInstance();
+      const albumName = inputs.albumName || 'Recents';
+      const photo = inputs.photo || {};
+      
+      const savedPhoto = await provider.saveToAlbum(photo, albumName);
+      context.log('info', `Saved photo to album "${albumName}"`);
+      
+      return { success: true, outputs: { savedPhoto } };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to save photo: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
-    context.log('info', `Saving ${media.length} items to album '${albumName}'`);
-    return { success: true, outputs: { savedCount: media.length } };
   }
 }
 
 export const PHOTOS_ACTIONS = [
   GetLatestPhotosAction,
+  GetPhotosFromAlbumAction,
   SaveToAlbumAction
 ];

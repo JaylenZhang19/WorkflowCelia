@@ -5,6 +5,8 @@
 import { Workflow } from './Workflow';
 import { DataType, WorkflowValue } from './DataType';
 import { ActionResult } from './Action';
+import { logger } from '..';
+
 
 /**
  * Result from executing a node
@@ -114,6 +116,7 @@ export class WorkflowContext {
 
   cancel(): void {
     this.cancelled = true;
+    logger.info('WorkflowContext', 'Execution cancelled');
   }
 
   isCancelled(): boolean {
@@ -121,6 +124,9 @@ export class WorkflowContext {
   }
 
   log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
+    const tag = 'Workflow';
+    const nodeId = this.logs.length + 1;
+    
     this.logs.push({
       timestamp: Date.now(),
       level,
@@ -128,8 +134,20 @@ export class WorkflowContext {
       data
     });
 
-    if (this.debugMode) {
-      console.log(`[${level.toUpperCase()}] ${message}`);
+    // Use hilog for output
+    switch (level) {
+      case 'debug':
+        logger.debug(tag, message, JSON.stringify(data || {}));
+        break;
+      case 'info':
+        logger.info(tag, message, JSON.stringify(data || {}));
+        break;
+      case 'warn':
+        logger.warn(tag, message, JSON.stringify(data || {}));
+        break;
+      case 'error':
+        logger.error(tag, message, JSON.stringify(data || {}));
+        break;
     }
   }
 
