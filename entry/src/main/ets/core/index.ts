@@ -16,9 +16,13 @@ export * from './actions/SystemActions';
 export * from './actions/PhotosActions';
 export * from './actions/CalendarActions';
 export * from './actions/BuiltInActions';
+export * from './actions/AbilityActions';
 
 // Export providers
 export * from '../providers/index';
+
+// Export abilities
+export * from '../abilities/index';
 
 // Export utils
 export * from '../utils/index';
