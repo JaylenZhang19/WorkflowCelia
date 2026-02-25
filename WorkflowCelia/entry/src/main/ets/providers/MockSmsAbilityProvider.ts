@@ -11,7 +11,7 @@ const TAG = 'MockSmsAbilityProvider';
  * Provides SMS sending capability via MockAbilityProvider
  */
 export class MockSmsAbilityProvider implements IAbilityProvider {
-  private static readonly TARGET_BUNDLE = 'com.example.mockabilityprovider';
+  private static readonly TARGET_BUNDLE = 'com.pumpkin.mockabilityprovider';
   private static readonly TARGET_ABILITY = 'SmsServiceExtension';
   private static readonly ACTION = 'action.send.sms';
 
