@@ -1,0 +1,86 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "EntryAbility",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "description": "$string:EntryAbility_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:EntryAbility_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "SmsServiceAbility",
+        "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ts",
+        "description": "$string:sms_service_ability_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:sms_service_ability_label",
+        "exported": true,
+        "permissions": [
+          "ohos.permission.SEND_MESSAGES"
+        ],
+        "skills": [
+          {
+            "actions": [
+              "action.send.sms"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "EmailServiceAbility",
+        "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ts",
+        "description": "$string:email_service_ability_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:email_service_ability_label",
+        "exported": true,
+        "permissions": [
+          "ohos.permission.INTERNET"
+        ],
+        "skills": [
+          {
+            "actions": [
+              "action.send.email"
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "EntryBackupAbility",
+        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ]
+      }
+    ]
+  }
+}
