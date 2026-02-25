@@ -1,10 +1,11 @@
 {
   "name": "entry",
   "version": "1.0.0",
-  "description": "Please describe the basic information.",
+  "description": "Mock Ability Provider - Provides SMS and Email capabilities for WorkflowCelia",
   "main": "",
-  "author": "",
-  "license": "",
-  "dependencies": {}
+  "author": "WorkflowCelia Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ability_link": "file:../WorkflowCelia/ability_link"
+  }
 }
-

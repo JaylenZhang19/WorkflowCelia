@@ -47,7 +47,7 @@
       },
       {
         "name": "SmsServiceAbility",
-        "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ts",
+        "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ets",
         "type": "appService",
         "exported": true,
         "permissions": [
@@ -63,7 +63,7 @@
       },
       {
         "name": "EmailServiceAbility",
-        "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ts",
+        "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ets",
         "type": "appService",
         "exported": true,
         "permissions": [

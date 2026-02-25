@@ -1,287 +1,431 @@
-# 外部能力集成文档
+# 新应用集成指南
 
-## 概述
+本指南说明如何将新的第三方应用集成到 AbilityLink 生态系统中，使 WorkflowCelia 能够发现并调用该应用的能力。
 
-本文档说明 WorkflowCelia（任务编排中心）如何与 MockAbilityProvider（外部能力提供方）集成，实现短信和邮件发送能力的后台调用。
-
-## 项目结构
+## 集成流程概述
 
 ```
-harmony_repository/
-├── WorkflowCelia/              # 任务编排中心
-│   └── entry/
-│       └── src/main/
-│           ├── ets/
-│           │   ├── providers/              # 能力提供者 (.ts)
-│           │   │   ├── MockSmsAbilityProvider.ts
-│           │   │   ├── MockEmailAbilityProvider.ts
-│           │   │   └── ExternalAbilityService.ts
-│           │   ├── core/engine/
-│           │   │   └── BackgroundTaskExecutor.ts
-│           │   └── pages/                  # ArkUI 页面 (.ets)
-│           │       └── ExternalAbilityDemo.ets
-│           └── module.json5
-│
-└── MockAbilityProvider/        # 能力提供方
-    └── entry/
-        └── src/main/
-            ├── ets/
-            │   ├── smsserviceability/        # 短信服务 (.ts)
-            │   │   └── SmsServiceAbility.ts
-            │   ├── emailserviceability/      # 邮件服务 (.ts)
-            │   │   └── EmailServiceAbility.ts
-            │   └── pages/                    # ArkUI 页面 (.ets)
-            │       └── Index.ets
-            └── module.json5
+1. 添加 SDK 依赖 → 2. 定义能力 → 3. 实现 Provider → 4. 配置 module.json5 → 5. 测试
 ```
 
-**说明：**
-- 后端逻辑代码使用 `.ts` 扩展名
-- ArkUI 页面使用 `.ets` 扩展名
-- 使用 ServiceAbility 实现跨应用调用（避免系统权限限制）
+## 步骤 1: 添加 SDK 依赖
 
-## 能力提供方 (MockAbilityProvider)
+### 使用 WorkflowCelia 的 ability_link HAR 模块
 
-### ServiceAbility 配置
-
-MockAbilityProvider 提供两个 ServiceAbility：
-
-| 能力 | ServiceAbility | Action |
-|------|---------------|--------|
-| 短信 | SmsServiceAbility | action.send.sms |
-| 邮件 | EmailServiceAbility | action.send.email |
-
-### 短信能力参数
-
-```typescript
-interface SmsSendParams {
-  phoneNumber: string;   // 接收方电话号码
-  message: string;       // 短信内容
-}
-```
-
-### 邮件能力参数
-
-```typescript
-interface EmailSendParams {
-  to: string[];          // 收件人列表
-  cc?: string[];         // 抄送人列表
-  bcc?: string[];        // 密送人列表
-  subject: string;       // 邮件主题
-  body: string;          // 邮件正文
-  isHtml?: boolean;      // 是否为 HTML 格式
-}
-```
-
-## 任务编排中心 (WorkflowCelia)
-
-### ExternalAbilityService 使用
-
-```typescript
-import { ExternalAbilityService } from './providers/ExternalAbilityService';
-
-// 获取服务实例
-const abilityService = ExternalAbilityService.getInstance();
-
-// 初始化服务
-await abilityService.initialize(context);
-
-// 发送短信
-const smsResult = await abilityService.sendSms({
-  phoneNumber: '13800138000',
-  message: 'Hello, World!'
-});
-
-// 发送邮件
-const emailResult = await abilityService.sendEmail({
-  to: ['user@example.com'],
-  subject: '测试邮件',
-  body: '这是一封测试邮件'
-});
-```
-
-### BackgroundTaskExecutor 使用
-
-```typescript
-import { BackgroundTaskExecutor, TaskType } from './core/engine/BackgroundTaskExecutor';
-
-// 获取执行器实例
-const taskExecutor = BackgroundTaskExecutor.getInstance();
-
-// 初始化执行器
-await taskExecutor.initialize(context);
-
-// 添加短信任务到队列
-taskExecutor.addTask({
-  type: TaskType.SEND_SMS,
-  name: '发送短信',
-  inputs: {
-    phoneNumber: '13800138000',
-    message: 'Hello!'
-  }
-});
-
-// 添加邮件任务到队列
-taskExecutor.addTask({
-  type: TaskType.SEND_EMAIL,
-  name: '发送邮件',
-  inputs: {
-    to: ['user@example.com'],
-    subject: '测试',
-    body: '正文'
-  }
-});
-
-// 立即执行任务
-const task = await taskExecutor.executeTask({
-  type: TaskType.SEND_SMS,
-  name: '紧急短信',
-  inputs: { phoneNumber: '13800138000', message: '紧急!' }
-});
-```
-
-## 跨应用调用流程
-
-```
-┌─────────────────┐     Want      ┌──────────────────────┐
-│  WorkflowCelia  │ ────────────> │ MockAbilityProvider  │
-│                 │               │                      │
-│  EntryAbility   │               │  SmsServiceAbility   │
-│       │         │               │  EmailServiceAbility │
-│       ▼         │               │                      │
-│  ExternalAbility│ ◄──────────── │  Mock Implementation │
-│  Service        │    Result     │                      │
-│       │         │               │                      │
-│       ▼         │               │                      │
-│  Background     │               │  Send Records        │
-│  Task Executor  │               │                      │
-└─────────────────┘               └──────────────────────┘
-```
-
-## 调用示例
-
-### 1. 直接调用
-
-```typescript
-// 在 Ability 中
-import { ExternalAbilityService } from './providers/ExternalAbilityService';
-
-export default class EntryAbility extends UIAbility {
-  async onCreate() {
-    const service = ExternalAbilityService.getInstance();
-    await service.initialize(this.context);
-    
-    // 发送通知短信
-    await service.sendSms({
-      phoneNumber: '13800138000',
-      message: '任务完成通知'
-    });
-  }
-}
-```
-
-### 2. 工作流集成
-
-```typescript
-// 在工作流节点中
-import { BackgroundTaskExecutor, TaskType } from './core/engine/BackgroundTaskExecutor';
-
-async function executeWorkflowNode(workflowContext: any) {
-  const executor = BackgroundTaskExecutor.getInstance();
-  
-  // 根据工作流配置添加任务
-  if (workflowContext.nodeType === 'sms_notification') {
-    executor.addTask({
-      type: TaskType.SEND_SMS,
-      name: '发送通知短信',
-      inputs: workflowContext.inputs
-    });
-  } else if (workflowContext.nodeType === 'email_notification') {
-    executor.addTask({
-      type: TaskType.SEND_EMAIL,
-      name: '发送通知邮件',
-      inputs: workflowContext.inputs
-    });
-  }
-}
-```
-
-## 权限配置
-
-### WorkflowCelia 权限
-
-WorkflowCelia 不需要特殊权限，通过 Want 的 action 匹配调用服务。
-
-### MockAbilityProvider 权限
-
-在 `module.json5` 中配置 abilities 的 permissions：
+在您的应用的 `entry/oh-package.json5` 中添加：
 
 ```json5
-"abilities": [
-  {
-    "name": "SmsServiceAbility",
-    "permissions": ["ohos.permission.SEND_MESSAGES"]
-  },
-  {
-    "name": "EmailServiceAbility",
-    "permissions": ["ohos.permission.INTERNET"]
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "dependencies": {
+    "ability_link": "file:../WorkflowCelia/ability_link"
   }
-]
+}
 ```
 
-**注意：** 这里使用 ServiceAbility 而不是 ExtensionAbility，因为：
-1. ExtensionAbility 的 sms/email 类型需要系统权限
-2. ServiceAbility 可以通过 action 匹配实现跨应用调用
-3. 普通应用可以直接使用，无需特殊 APL 等级
+**注意：** 需要先构建 `WorkflowCelia/ability_link` 模块生成 HAR 包。
 
-## 演示页面
+### 构建 HAR 包
 
-### WorkflowCelia
+在 WorkflowCelia 项目目录下执行：
 
-访问 `pages/ExternalAbilityDemo` 页面测试：
-- 短信发送（立即发送/加入队列）
-- 邮件发送（立即发送/加入队列）
-- 任务队列管理
+```bash
+cd /path/to/WorkflowCelia
 
-### MockAbilityProvider
+# macOS
+/Applications/DevEco-Studio.app/Contents/tools/hvigor/bin/hvigorw.js \
+  --mode module -p product=default -p module=ability_link@default assembleHar
 
-访问主页面查看：
-- 可用能力列表
-- 技术信息
-- 服务状态
+# 或在 DevEco Studio 中右键 ability_link 模块 > Build > Build HAR
+```
 
-## 扩展说明
+HAR 包生成位置：
+```
+WorkflowCelia/ability_link/build/default/outputs/default/ability_link.har
+```
 
-### 添加新的能力提供方
+## 步骤 2: 定义能力
 
-1. 在 MockAbilityProvider 中创建新的 ExtensionAbility
-2. 在 module.json5 中注册
-3. 在 WorkflowCelia 中创建对应的 AbilityProvider
-4. 在 ExternalAbilityService 中集成
+创建能力定义文件，描述您的应用提供的能力：
 
-### 真实场景替换
+```typescript
+// 例如：entry/src/main/ets/capabilities/CalendarCapability.ts
+import {
+  AbilityLinkCapability,
+  AbilityCategory,
+  CapabilityDataType
+} from '@ability-link/sdk';
 
-当前实现为 Mock 版本，真实场景中：
-1. 短信能力应由短信应用提供
-2. 邮件能力应由邮件应用提供
-3. 各应用独立部署，通过 Want 机制通信
+export const CREATE_EVENT_CAPABILITY: AbilityLinkCapability = {
+  name: 'calendar.create_event',
+  displayName: '创建日历事件',
+  description: '在日历中创建新事件',
+  version: '1.0.0',
+  category: AbilityCategory.CALENDAR,
+  icon: '$media:calendar_icon',
+  inputs: [
+    {
+      name: 'title',
+      type: CapabilityDataType.STRING,
+      required: true,
+      description: '事件标题'
+    },
+    {
+      name: 'startTime',
+      type: CapabilityDataType.DATE,
+      required: true,
+      description: '开始时间'
+    },
+    {
+      name: 'endTime',
+      type: CapabilityDataType.DATE,
+      required: true,
+      description: '结束时间'
+    },
+    {
+      name: 'location',
+      type: CapabilityDataType.STRING,
+      required: false,
+      description: '事件地点'
+    },
+    {
+      name: 'description',
+      type: CapabilityDataType.STRING,
+      required: false,
+      description: '事件描述'
+    }
+  ],
+  outputs: [
+    {
+      name: 'success',
+      type: CapabilityDataType.BOOLEAN,
+      required: true,
+      description: '是否创建成功'
+    },
+    {
+      name: 'eventId',
+      type: CapabilityDataType.STRING,
+      required: false,
+      description: '事件 ID'
+    }
+  ],
+  permissions: ['ohos.permission.WRITE_CALENDAR'],
+  requiresConfirmation: true,
+  metadata: {
+    // 自定义元数据
+    supportsRecurring: true,
+    supportsReminders: true
+  }
+};
+```
 
-## 注意事项
+## 步骤 3: 实现 Provider
 
-1. 确保 MockAbilityProvider 已安装
-2. 检查跨应用调用权限
-3. 后台任务需要考虑应用生命周期
-4. Mock 实现不实际发送短信/邮件
+创建能力提供者实现类：
 
-## 文件清单
+```typescript
+// 例如：entry/src/main/ets/providers/CalendarAbilityProvider.ts
+import {
+  AbilityLinkProvider,
+  InvokeResult
+} from '@ability-link/sdk';
+import { CREATE_EVENT_CAPABILITY } from '../capabilities/CalendarCapability';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 
-### MockAbilityProvider 新增文件
-- `entry/src/main/ets/smsserviceability/SmsServiceAbility.ts`
-- `entry/src/main/ets/emailserviceability/EmailServiceAbility.ts`
+const DOMAIN = 0x4000;
+const TAG = 'CalendarAbilityProvider';
 
-### WorkflowCelia 新增文件
-- `entry/src/main/ets/providers/MockSmsAbilityProvider.ts`
-- `entry/src/main/ets/providers/MockEmailAbilityProvider.ts`
-- `entry/src/main/ets/providers/ExternalAbilityService.ts`
-- `entry/src/main/ets/core/engine/BackgroundTaskExecutor.ts`
-- `entry/src/main/ets/pages/ExternalAbilityDemo.ets`（ArkUI 页面）
+export class CalendarAbilityProvider extends AbilityLinkProvider {
+  getCapability(): AbilityLinkCapability {
+    return CREATE_EVENT_CAPABILITY;
+  }
+
+  async invoke(inputs: Record<string, any>): Promise<InvokeResult> {
+    // 验证输入
+    const validation = this.validateInputs(inputs);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+        errorCode: 'INVALID_PARAMETERS'
+      };
+    }
+
+    try {
+      // 实现创建日历事件的逻辑
+      const { title, startTime, endTime, location, description } = inputs;
+
+      // 这里调用实际的日历 API
+      // const eventId = await this.createCalendarEvent({...});
+
+      // 模拟实现
+      const eventId = `EVENT_${Date.now()}`;
+
+      hilog.info(DOMAIN, TAG, 'Created calendar event: %{public}s', title);
+
+      return {
+        success: true,
+        outputs: {
+          success: true,
+          eventId: eventId
+        },
+        metadata: {
+          provider: 'CalendarApp',
+          capability: 'calendar.create_event',
+          timestamp: Date.now()
+        }
+      };
+    } catch (error) {
+      hilog.error(DOMAIN, TAG, 'Failed to create event: %{public}s', JSON.stringify(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '创建事件失败',
+        errorCode: 'EVENT_CREATE_FAILED'
+      };
+    }
+  }
+
+  async isAvailable(): Promise<boolean> {
+    // 检查日历权限等
+    return true;
+  }
+}
+```
+
+## 步骤 4: 创建 ExtensionAbility
+
+创建用于暴露能力的 ExtensionAbility：
+
+```typescript
+// 例如：entry/src/main/ets/calendarability/CalendarAbility.ts
+import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { CalendarAbilityProvider } from '../providers/CalendarAbilityProvider';
+
+const DOMAIN = 0x4000;
+const TAG = 'CalendarAbility';
+
+export default class CalendarAbility extends AppServiceExtensionAbility {
+  private provider: CalendarAbilityProvider;
+
+  onCreate(): void {
+    hilog.info(DOMAIN, TAG, 'CalendarAbility onCreate');
+    this.provider = new CalendarAbilityProvider();
+  }
+
+  onDestroy(): void {
+    hilog.info(DOMAIN, TAG, 'CalendarAbility onDestroy');
+    this.provider.dispose();
+  }
+
+  async onStartCommand(want: Want, startId: number): Promise<void> {
+    hilog.info(DOMAIN, TAG, 'onStartCommand: %{public}s', JSON.stringify(want));
+
+    try {
+      const result = await this.provider.invoke(want.parameters);
+      hilog.info(DOMAIN, TAG, 'Result: %{public}s', JSON.stringify(result));
+    } catch (err) {
+      hilog.error(DOMAIN, TAG, 'Error: %{public}s', JSON.stringify(err));
+    }
+  }
+}
+```
+
+## 步骤 5: 配置 module.json5
+
+在 `module.json5` 中声明 ExtensionAbility 和能力元数据：
+
+```json5
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "deviceTypes": ["phone"],
+    "abilities": [
+      {
+        "name": "EntryAbility",
+        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "exported": true
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "CalendarAbility",
+        "srcEntry": "./ets/calendarability/CalendarAbility.ts",
+        "type": "appService",
+        "exported": true,
+        "permissions": ["ohos.permission.WRITE_CALENDAR"],
+        "skills": [
+          {
+            "actions": ["action.calendar.create_event"]
+          }
+        ],
+        "metadata": [
+          {
+            "name": "ability-link.capability",
+            "value": "{\"name\":\"calendar.create_event\",\"displayName\":\"创建日历事件\",\"description\":\"在日历中创建新事件\",\"version\":\"1.0.0\",\"category\":\"calendar\",\"inputs\":[{\"name\":\"title\",\"type\":\"string\",\"required\":true,\"description\":\"事件标题\"},{\"name\":\"startTime\",\"type\":\"date\",\"required\":true,\"description\":\"开始时间\"},{\"name\":\"endTime\",\"type\":\"date\",\"required\":true,\"description\":\"结束时间\"},{\"name\":\"location\",\"type\":\"string\",\"required\":false,\"description\":\"事件地点\"},{\"name\":\"description\",\"type\":\"string\",\"required\":false,\"description\":\"事件描述\"}],\"outputs\":[{\"name\":\"success\",\"type\":\"boolean\",\"required\":true,\"description\":\"是否创建成功\"},{\"name\":\"eventId\",\"type\":\"string\",\"required\":false,\"description\":\"事件 ID\"}],\"permissions\":[\"ohos.permission.WRITE_CALENDAR\"],\"requiresConfirmation\":true}"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 步骤 6: 测试
+
+### 单元测试 Provider
+
+```typescript
+// 例如：entry/src/test/CalendarAbilityProvider.test.ts
+import { CalendarAbilityProvider } from '../main/ets/providers/CalendarAbilityProvider';
+
+describe('CalendarAbilityProvider', () => {
+  let provider: CalendarAbilityProvider;
+
+  beforeEach(() => {
+    provider = new CalendarAbilityProvider();
+  });
+
+  afterEach(() => {
+    provider.dispose();
+  });
+
+  test('should create event successfully', async () => {
+    const result = await provider.invoke({
+      title: 'Test Meeting',
+      startTime: new Date().toISOString(),
+      endTime: new Date().toISOString()
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.outputs?.eventId).toBeDefined();
+  });
+
+  test('should fail with missing parameters', async () => {
+    const result = await provider.invoke({});
+
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('INVALID_PARAMETERS');
+  });
+});
+```
+
+### 集成测试
+
+1. 安装 MockAbilityProvider 和您的应用到设备/模拟器
+2. 打开 WorkflowCelia 应用
+3. 进入 AbilityLink Demo 页面
+4. 点击 "Discover Capabilities"
+5. 验证您的能力出现在列表中
+6. 选择您的能力并测试调用
+
+## 多能力应用
+
+如果您的应用提供多个能力，使用 `MultiCapabilityProvider`：
+
+```typescript
+import {
+  MultiCapabilityProvider,
+  AbilityLinkCapability,
+  InvokeResult
+} from '@ability-link/sdk';
+
+export class MultiCalendarProvider extends MultiCapabilityProvider {
+  getCapabilities(): AbilityLinkCapability[] {
+    return [
+      CREATE_EVENT_CAPABILITY,
+      DELETE_EVENT_CAPABILITY,
+      UPDATE_EVENT_CAPABILITY
+    ];
+  }
+
+  async invoke(capabilityName: string, inputs: Record<string, any>): Promise<InvokeResult> {
+    switch (capabilityName) {
+      case 'calendar.create_event':
+        return this.createEvent(inputs);
+      case 'calendar.delete_event':
+        return this.deleteEvent(inputs);
+      case 'calendar.update_event':
+        return this.updateEvent(inputs);
+      default:
+        return {
+          success: false,
+          error: `Unknown capability: ${capabilityName}`,
+          errorCode: 'CAPABILITY_NOT_FOUND'
+        };
+    }
+  }
+
+  private async createEvent(inputs: Record<string, any>): Promise<InvokeResult> {
+    // 实现创建逻辑
+  }
+
+  private async deleteEvent(inputs: Record<string, any>): Promise<InvokeResult> {
+    // 实现删除逻辑
+  }
+
+  private async updateEvent(inputs: Record<string, any>): Promise<InvokeResult> {
+    // 实现更新逻辑
+  }
+}
+```
+
+在 `module.json5` 中为每个能力添加单独的 metadata 条目。
+
+## 最佳实践
+
+### 1. 能力设计
+- **单一职责**: 每个能力只做一件事
+- **明确命名**: 使用 `domain.action` 格式
+- **完整描述**: 提供清晰的描述和使用说明
+- **合理分类**: 选择正确的能力类别
+
+### 2. 输入输出
+- **最小化必填参数**: 只要求必要的参数
+- **提供默认值**: 对于可选参数提供合理的默认值
+- **类型安全**: 使用正确的数据类型
+- **验证规则**: 添加适当的验证规则
+
+### 3. 错误处理
+- **明确错误码**: 定义清晰的错误码体系
+- **友好错误信息**: 提供用户友好的错误信息
+- **本地化**: 支持多语言错误信息
+
+### 4. 性能
+- **快速响应**: 能力调用应快速返回
+- **异步处理**: 对于耗时操作使用异步处理
+- **资源管理**: 及时释放资源
+
+### 5. 安全
+- **权限检查**: 在执行前检查权限
+- **用户确认**: 敏感操作要求用户确认
+- **数据验证**: 验证所有输入数据
+
+## 常见问题
+
+### Q: 能力命名冲突怎么办？
+A: 使用您的应用包名作为前缀，如 `com.example.calendar.create_event`
+
+### Q: 如何处理需要用户交互的能力？
+A: 设置 `requiresConfirmation: true`，Consumer 会在调用前请求用户确认
+
+### Q: 能力可以依赖其他能力吗？
+A: 不建议。每个能力应该是独立的。如需组合，应在 Consumer 端实现
+
+### Q: 如何更新已发布的能力？
+A: 增加 `version` 字段，保持向后兼容。重大变更应创建新能力
+
+## 示例代码
+
+完整示例参考：
+- `MockAbilityProvider/entry/src/main/ets/smsserviceability/` - 短信能力示例
+- `MockAbilityProvider/entry/src/main/ets/emailserviceability/` - 邮件能力示例
+
+## 技术支持
+
+如有问题，请查阅：
+- AbilityLink SDK README.md
+- WorkflowCelia 项目文档
+- HarmonyOS 官方文档
