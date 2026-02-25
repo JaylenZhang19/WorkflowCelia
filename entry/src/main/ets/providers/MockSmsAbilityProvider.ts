@@ -1,6 +1,7 @@
 import { IAbilityProvider, AbilityMeta, AbilityDefinition, AbilityCategory, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
+import { DataType } from '../core/models/DataType';
 
 const DOMAIN = 0x2000;
 const TAG = 'MockSmsAbilityProvider';
@@ -11,7 +12,7 @@ const TAG = 'MockSmsAbilityProvider';
  */
 export class MockSmsAbilityProvider implements IAbilityProvider {
   private static readonly TARGET_BUNDLE = 'com.example.mockabilityprovider';
-  private static readonly TARGET_ABILITY = 'SmsExtensionAbility';
+  private static readonly TARGET_ABILITY = 'SmsServiceAbility';
   private static readonly ACTION = 'action.send.sms';
 
   private meta: AbilityMeta = {
@@ -44,13 +45,13 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
       inputs: [
         {
           name: 'phoneNumber',
-          type: 'string',
+          type: DataType.TEXT,
           required: true,
           description: '接收方电话号码'
         },
         {
           name: 'message',
-          type: 'string',
+          type: DataType.TEXT,
           required: true,
           description: '短信内容'
         }
@@ -58,13 +59,13 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
       outputs: [
         {
           name: 'success',
-          type: 'boolean',
+          type: DataType.BOOLEAN,
           required: true,
           description: '是否发送成功'
         },
         {
           name: 'messageId',
-          type: 'string',
+          type: DataType.TEXT,
           required: false,
           description: '消息 ID'
         }
@@ -122,7 +123,7 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
   private async sendSmsViaWant(phoneNumber: string, message: string): Promise<AbilityResult> {
     try {
       // Create Want to call MockAbilityProvider
-      const wantInfo: common.Want = {
+      const wantInfo: Want = {
         bundleName: MockSmsAbilityProvider.TARGET_BUNDLE,
         abilityName: MockSmsAbilityProvider.TARGET_ABILITY,
         action: MockSmsAbilityProvider.ACTION,
@@ -150,11 +151,8 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
       };
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to send SMS via Want: %{public}s', JSON.stringify(err));
-      return {
-        success: false,
-        error: `Failed to send SMS: ${JSON.stringify(err)}`,
-        errorCode: 'WANT_SEND_FAILED'
-      };
+      // Fallback to mock execution
+      return this.mockExecute(phoneNumber, message);
     }
   }
 

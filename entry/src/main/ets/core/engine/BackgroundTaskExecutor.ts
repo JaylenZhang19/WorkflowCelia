@@ -1,6 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
-import { ExternalAbilityService, SmsParams, EmailParams, AbilityCallResult } from './ExternalAbilityService';
+import { ExternalAbilityService, SmsParams, EmailParams, AbilityCallResult } from '../../providers/ExternalAbilityService';
 
 const DOMAIN = 0x2200;
 const TAG = 'BackgroundTaskExecutor';
@@ -90,7 +90,7 @@ export class BackgroundTaskExecutor {
     hilog.info(DOMAIN, TAG, 'Task added: %{public}s', taskDefinition.id);
 
     // 启动任务处理
-    this.processQueue();
+    void this.processQueue();
 
     return taskDefinition;
   }
@@ -134,7 +134,9 @@ export class BackgroundTaskExecutor {
 
     while (this.taskQueue.length > 0) {
       const task = this.taskQueue.shift();
-      if (!task) continue;
+      if (!task) {
+        continue;
+      }
 
       task.status = TaskStatus.RUNNING;
       task.startedAt = Date.now();
@@ -196,7 +198,7 @@ export class BackgroundTaskExecutor {
    * 获取任务状态
    */
   getTaskStatus(taskId: string): TaskStatus | undefined {
-    const task = this.taskQueue.find(t => t.id === taskId);
+    const task = this.taskQueue.find((t) => t.id === taskId);
     return task?.status;
   }
 
@@ -211,28 +213,28 @@ export class BackgroundTaskExecutor {
    * 获取待处理任务
    */
   getPendingTasks(): TaskDefinition[] {
-    return this.taskQueue.filter(t => t.status === TaskStatus.PENDING);
+    return this.taskQueue.filter((t) => t.status === TaskStatus.PENDING);
   }
 
   /**
    * 获取已完成任务
    */
   getCompletedTasks(): TaskDefinition[] {
-    return this.taskQueue.filter(t => t.status === TaskStatus.COMPLETED);
+    return this.taskQueue.filter((t) => t.status === TaskStatus.COMPLETED);
   }
 
   /**
    * 获取失败任务
    */
   getFailedTasks(): TaskDefinition[] {
-    return this.taskQueue.filter(t => t.status === TaskStatus.FAILED);
+    return this.taskQueue.filter((t) => t.status === TaskStatus.FAILED);
   }
 
   /**
    * 取消任务
    */
   cancelTask(taskId: string): boolean {
-    const task = this.taskQueue.find(t => t.id === taskId && t.status === TaskStatus.PENDING);
+    const task = this.taskQueue.find((t) => t.id === taskId && t.status === TaskStatus.PENDING);
     if (task) {
       task.status = TaskStatus.CANCELLED;
       hilog.info(DOMAIN, TAG, 'Task cancelled: %{public}s', taskId);
@@ -245,14 +247,14 @@ export class BackgroundTaskExecutor {
    * 清空已完成任务
    */
   clearCompletedTasks(): number {
-    const completedCount = this.taskQueue.filter(t => 
+    const completedCount = this.taskQueue.filter((t) =>
       t.status === TaskStatus.COMPLETED || t.status === TaskStatus.CANCELLED
     ).length;
-    
-    this.taskQueue = this.taskQueue.filter(t => 
+
+    this.taskQueue = this.taskQueue.filter((t) =>
       t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.CANCELLED
     );
-    
+
     hilog.info(DOMAIN, TAG, 'Cleared %{public}d completed tasks', completedCount);
     return completedCount;
   }

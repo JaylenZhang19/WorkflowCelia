@@ -10,18 +10,6 @@
     "deliveryWithInstall": true,
     "installationFree": false,
     "pages": "$profile:main_pages",
-    "requestPermissions": [
-      {
-        "name": "ohos.permission.START_ABILITIES_FROM_BACKGROUND",
-        "reason": "$string:start_ability_from_background_reason",
-        "usedScene": {
-          "abilities": [
-            "EntryAbility"
-          ],
-          "when": "always"
-        }
-      }
-    ],
     "abilities": [
       {
         "name": "EntryAbility",

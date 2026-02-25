@@ -1,18 +1,10 @@
 import { IAbilityProvider, AbilityMeta, AbilityDefinition, AbilityCategory, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { common } from '@kit.AbilityKit';
+import { common, Want } from '@kit.AbilityKit';
+import { DataType } from '../core/models/DataType';
 
 const DOMAIN = 0x2001;
 const TAG = 'MockEmailAbilityProvider';
-
-/**
- * Email attachment interface
- */
-export interface EmailAttachment {
-  fileName: string;
-  filePath?: string;
-  mimeType?: string;
-}
 
 /**
  * Mock Email Ability Provider
@@ -20,7 +12,7 @@ export interface EmailAttachment {
  */
 export class MockEmailAbilityProvider implements IAbilityProvider {
   private static readonly TARGET_BUNDLE = 'com.example.mockabilityprovider';
-  private static readonly TARGET_ABILITY = 'EmailExtensionAbility';
+  private static readonly TARGET_ABILITY = 'EmailServiceAbility';
   private static readonly ACTION = 'action.send.email';
 
   private meta: AbilityMeta = {
@@ -53,40 +45,37 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
       inputs: [
         {
           name: 'to',
-          type: 'string[]',
+          type: DataType.ARRAY,
           required: true,
-          isArray: true,
           description: '收件人列表'
         },
         {
           name: 'subject',
-          type: 'string',
+          type: DataType.TEXT,
           required: true,
           description: '邮件主题'
         },
         {
           name: 'body',
-          type: 'string',
+          type: DataType.TEXT,
           required: true,
           description: '邮件正文'
         },
         {
           name: 'cc',
-          type: 'string[]',
+          type: DataType.ARRAY,
           required: false,
-          isArray: true,
           description: '抄送人列表'
         },
         {
           name: 'bcc',
-          type: 'string[]',
+          type: DataType.ARRAY,
           required: false,
-          isArray: true,
           description: '密送人列表'
         },
         {
           name: 'isHtml',
-          type: 'boolean',
+          type: DataType.BOOLEAN,
           required: false,
           description: '是否为 HTML 格式'
         }
@@ -94,13 +83,13 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
       outputs: [
         {
           name: 'success',
-          type: 'boolean',
+          type: DataType.BOOLEAN,
           required: true,
           description: '是否发送成功'
         },
         {
           name: 'messageId',
-          type: 'string',
+          type: DataType.TEXT,
           required: false,
           description: '消息 ID'
         }
@@ -158,13 +147,13 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
     to: string[],
     subject: string,
     body: string,
-    cc?: string[],
-    bcc?: string[],
-    isHtml?: boolean
+    cc: string[] | undefined,
+    bcc: string[] | undefined,
+    isHtml: boolean | undefined
   ): Promise<AbilityResult> {
     try {
       // Create Want to call MockAbilityProvider
-      const wantInfo: common.Want = {
+      const wantInfo: Want = {
         bundleName: MockEmailAbilityProvider.TARGET_BUNDLE,
         abilityName: MockEmailAbilityProvider.TARGET_ABILITY,
         action: MockEmailAbilityProvider.ACTION,
@@ -196,11 +185,8 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
       };
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to send Email via Want: %{public}s', JSON.stringify(err));
-      return {
-        success: false,
-        error: `Failed to send Email: ${JSON.stringify(err)}`,
-        errorCode: 'WANT_SEND_FAILED'
-      };
+      // Fallback to mock execution
+      return this.mockExecute(to, subject, body);
     }
   }
 

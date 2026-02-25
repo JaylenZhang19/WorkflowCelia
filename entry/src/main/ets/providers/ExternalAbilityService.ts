@@ -2,7 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
 import { MockSmsAbilityProvider } from './MockSmsAbilityProvider';
 import { MockEmailAbilityProvider } from './MockEmailAbilityProvider';
-import { IAbilityProvider, AbilityResult } from '../abilities/IAbilityProvider';
+import { IAbilityProvider, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
 
 const DOMAIN = 0x2100;
 const TAG = 'ExternalAbilityService';
@@ -168,17 +168,15 @@ export class ExternalAbilityService {
   /**
    * 创建能力执行上下文
    */
-  private createAbilityContext() {
+  private createAbilityContext(): AbilityContext {
     return {
       getVariable: (name: string): any => {
-        // Implement variable storage if needed
         return null;
       },
       setVariable: (name: string, value: any, dataType: string): void => {
         // Implement variable storage if needed
       },
       log: (level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void => {
-        const logLevel = { debug: 0, info: 1, warn: 2, error: 3 }[level];
         hilog.info(DOMAIN, TAG, '[%{public}s] %{public}s', level.toUpperCase(), message);
         if (data) {
           hilog.info(DOMAIN, TAG, 'Data: %{public}s', JSON.stringify(data));

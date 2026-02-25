@@ -15,18 +15,18 @@ const TAG = 'ExternalAbilityDemo';
 struct ExternalAbilityDemo {
   private abilityService: ExternalAbilityService = ExternalAbilityService.getInstance();
   private taskExecutor: BackgroundTaskExecutor = BackgroundTaskExecutor.getInstance();
-  
+
   // SMS form state
   @State phoneNumber: string = '';
   @State smsMessage: string = '';
   @State smsResult: string = '';
-  
+
   // Email form state
   @State emailTo: string = '';
   @State emailSubject: string = '';
   @State emailBody: string = '';
   @State emailResult: string = '';
-  
+
   // Task queue state
   @State taskCount: number = 0;
   @State tasks: TaskDefinition[] = [];
@@ -35,7 +35,7 @@ struct ExternalAbilityDemo {
     hilog.info(DOMAIN, TAG, 'ExternalAbilityDemo aboutToAppear');
   }
 
-  async aboutToDisappear() {
+  aboutToDisappear() {
     this.abilityService.dispose();
     this.taskExecutor.dispose();
   }
@@ -56,7 +56,7 @@ struct ExternalAbilityDemo {
       };
 
       const result = await this.abilityService.sendSms(params);
-      
+
       if (result.success) {
         this.smsResult = `发送成功！消息 ID: ${result.messageId}`;
         promptAction.showToast({ message: '短信发送成功' });
@@ -81,13 +81,13 @@ struct ExternalAbilityDemo {
 
     try {
       const params: EmailParams = {
-        to: this.emailTo.split(',').map(e => e.trim()),
+        to: this.emailTo.split(',').map((e) => e.trim()),
         subject: this.emailSubject,
         body: this.emailBody
       };
 
       const result = await this.abilityService.sendEmail(params);
-      
+
       if (result.success) {
         this.emailResult = `发送成功！消息 ID: ${result.messageId}`;
         promptAction.showToast({ message: '邮件发送成功' });
@@ -138,7 +138,7 @@ struct ExternalAbilityDemo {
       name: '发送邮件',
       description: `向 ${this.emailTo} 发送邮件`,
       inputs: {
-        to: this.emailTo.split(',').map(e => e.trim()),
+        to: this.emailTo.split(',').map((e) => e.trim()),
         subject: this.emailSubject,
         body: this.emailBody
       }
