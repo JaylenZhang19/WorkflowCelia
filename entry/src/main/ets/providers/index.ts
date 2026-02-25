@@ -1,18 +1,13 @@
 /**
- * Providers Index
- * Export all capability providers
+ * Providers Module
+ * External ability providers for cross-app communication
  */
 
-// System providers
-export * from './system/LocationProvider';
-export * from './system/BatteryProvider';
-export * from './system/DeviceInfoProvider';
-
-// Calendar provider
-export * from './calendar/CalendarProvider';
-
-// Photos provider
-export * from './photos/PhotosProvider';
-
-// Notification provider
-export * from './notification/NotificationProvider';
+export { MockSmsAbilityProvider } from './MockSmsAbilityProvider';
+export { MockEmailAbilityProvider } from './MockEmailAbilityProvider';
+export { 
+  ExternalAbilityService, 
+  SmsParams, 
+  EmailParams, 
+  AbilityCallResult 
+} from './ExternalAbilityService';

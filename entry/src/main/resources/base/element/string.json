@@ -2,15 +2,19 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "module description"
+      "value": "Workflow Celia - Task Orchestration Center"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "description"
+      "value": "Workflow Celia Entry"
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "Workflow Celia"
+    },
+    {
+      "name": "start_ability_from_background_reason",
+      "value": "Required to start external abilities from background for task execution"
     }
   ]
 }

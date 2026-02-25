@@ -1,6 +1,7 @@
 {
   "src": [
     "pages/Index",
-    "pages/WorkflowsList"
+    "pages/WorkflowsList",
+    "pages/ExternalAbilityDemo"
   ]
 }

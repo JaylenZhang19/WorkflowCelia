@@ -153,7 +153,7 @@ struct WorkflowsList {
       Row() {
         Column()
           .width(4)
-          .height('100%')
+          .height(50)
           .backgroundColor(workflow.color || '#007AFF')
           .borderRadius(2)
 
