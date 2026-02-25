@@ -30,13 +30,25 @@
             ]
           }
         ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "EntryBackupAbility",
+        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ]
       },
       {
         "name": "SmsServiceAbility",
         "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ts",
-        "description": "$string:sms_service_ability_desc",
-        "icon": "$media:layered_image",
-        "label": "$string:sms_service_ability_label",
+        "type": "appService",
         "exported": true,
         "permissions": [
           "ohos.permission.SEND_MESSAGES"
@@ -52,9 +64,7 @@
       {
         "name": "EmailServiceAbility",
         "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ts",
-        "description": "$string:email_service_ability_desc",
-        "icon": "$media:layered_image",
-        "label": "$string:email_service_ability_label",
+        "type": "appService",
         "exported": true,
         "permissions": [
           "ohos.permission.INTERNET"
@@ -64,20 +74,6 @@
             "actions": [
               "action.send.email"
             ]
-          }
-        ]
-      }
-    ],
-    "extensionAbilities": [
-      {
-        "name": "EntryBackupAbility",
-        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
-        "type": "backup",
-        "exported": false,
-        "metadata": [
-          {
-            "name": "ohos.extension.backup",
-            "resource": "$profile:backup_config"
           }
         ]
       }

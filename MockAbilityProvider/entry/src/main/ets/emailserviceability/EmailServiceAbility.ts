@@ -1,8 +1,8 @@
-import { ServiceAbility, Want } from '@kit.AbilityKit';
+import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x1001;
-const TAG = 'EmailServiceAbility';
+const TAG = 'EmailServiceExtension';
 
 /**
  * 邮件附件接口
@@ -37,27 +37,28 @@ interface EmailSendResult {
 }
 
 /**
- * 邮件 ServiceAbility
+ * 邮件 AppServiceExtensionAbility
  * 用于处理邮件发送请求，供 WorkflowCelia 后台调用
  */
-export default class EmailServiceAbility extends ServiceAbility {
+export default class EmailServiceAbility extends AppServiceExtensionAbility {
   private static readonly EMAIL_SERVICE_ACTION = 'action.send.email';
 
   onCreate(): void {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onCreate');
+    hilog.info(DOMAIN, TAG, 'EmailServiceExtension onCreate');
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onDestroy');
+    hilog.info(DOMAIN, TAG, 'EmailServiceExtension onDestroy');
   }
 
   /**
    * 处理 Want 请求
    * @param want 调用请求
-   * @param startReason 启动原因
+   * @param startId 启动 ID
    */
-  async onStart(want: Want, startReason: number): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onStart, want: %{public}s', JSON.stringify(want));
+  async onStartCommand(want: Want, startId: number): Promise<void> {
+    hilog.info(DOMAIN, TAG, 'EmailServiceExtension onStartCommand, want: %{public}s, startId: %{public}d', 
+      JSON.stringify(want), startId);
 
     try {
       const params = want.parameters as unknown as EmailSendParams;
@@ -123,7 +124,6 @@ export default class EmailServiceAbility extends ServiceAbility {
         timestamp: new Date().toISOString(),
         status: 'sent'
       };
-      // 这里可以使用 preferences 或数据库存储记录
       hilog.info(DOMAIN, TAG, 'Email record saved: %{public}s', JSON.stringify(record));
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to save email record: %{public}s', JSON.stringify(err));

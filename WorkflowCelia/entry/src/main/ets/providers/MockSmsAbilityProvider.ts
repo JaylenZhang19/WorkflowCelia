@@ -12,7 +12,7 @@ const TAG = 'MockSmsAbilityProvider';
  */
 export class MockSmsAbilityProvider implements IAbilityProvider {
   private static readonly TARGET_BUNDLE = 'com.example.mockabilityprovider';
-  private static readonly TARGET_ABILITY = 'SmsServiceAbility';
+  private static readonly TARGET_ABILITY = 'SmsServiceExtension';
   private static readonly ACTION = 'action.send.sms';
 
   private meta: AbilityMeta = {

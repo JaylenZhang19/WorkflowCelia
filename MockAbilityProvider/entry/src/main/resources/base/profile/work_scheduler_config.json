@@ -1,0 +1,8 @@
+{
+  "extensionName": "SmsServiceExtension",
+  "description": "$string:sms_service_ability_desc",
+  "type": "workScheduler",
+  "permissions": [
+    "ohos.permission.SEND_MESSAGES"
+  ]
+}

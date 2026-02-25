@@ -61,7 +61,7 @@ struct Index {
             Text('已启用')
               .fontSize(12)
               .fontColor('#07C160')
-              .padding(5, 10)
+              .padding({ left: 5, right: 10, top: 5, bottom: 5 })
               .backgroundColor('rgba(7, 193, 96, 0.1)')
               .borderRadius(15)
           }
@@ -94,7 +94,7 @@ struct Index {
             Text('已启用')
               .fontSize(12)
               .fontColor('#07C160')
-              .padding(5, 10)
+              .padding({ left: 5, right: 10, top: 5, bottom: 5 })
               .backgroundColor('rgba(7, 193, 96, 0.1)')
               .borderRadius(15)
           }
@@ -156,7 +156,7 @@ struct Index {
             .margin({ bottom: 10 })
 
           Column() {
-            this.TechnicalInfoRow('Bundle', 'com.example.mockabilityprovider')
+            this.TechnicalInfoRow('Bundle', 'com.pumpkin.mockabilityprovider')
             this.TechnicalInfoRow('SMS Extension', 'SmsExtensionAbility')
             this.TechnicalInfoRow('Email Extension', 'EmailExtensionAbility')
             this.TechnicalInfoRow('Protocol Version', '1.0.0')

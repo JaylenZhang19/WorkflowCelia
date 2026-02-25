@@ -1,8 +1,8 @@
-import { ServiceAbility, Want } from '@kit.AbilityKit';
+import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
 const DOMAIN = 0x1000;
-const TAG = 'SmsServiceAbility';
+const TAG = 'SmsServiceExtension';
 
 /**
  * 短信发送参数接口
@@ -23,27 +23,28 @@ interface SmsSendResult {
 }
 
 /**
- * 短信 ServiceAbility
+ * 短信 AppServiceExtensionAbility
  * 用于处理短信发送请求，供 WorkflowCelia 后台调用
  */
-export default class SmsServiceAbility extends ServiceAbility {
+export default class SmsServiceAbility extends AppServiceExtensionAbility {
   private static readonly SMS_SERVICE_ACTION = 'action.send.sms';
 
   onCreate(): void {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onCreate');
+    hilog.info(DOMAIN, TAG, 'SmsServiceExtension onCreate');
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onDestroy');
+    hilog.info(DOMAIN, TAG, 'SmsServiceExtension onDestroy');
   }
 
   /**
    * 处理 Want 请求
    * @param want 调用请求
-   * @param startReason 启动原因
+   * @param startId 启动 ID
    */
-  async onStart(want: Want, startReason: number): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onStart, want: %{public}s', JSON.stringify(want));
+  async onStartCommand(want: Want, startId: number): Promise<void> {
+    hilog.info(DOMAIN, TAG, 'SmsServiceExtension onStartCommand, want: %{public}s, startId: %{public}d', 
+      JSON.stringify(want), startId);
 
     try {
       const params = want.parameters as unknown as SmsSendParams;
@@ -105,7 +106,6 @@ export default class SmsServiceAbility extends ServiceAbility {
         timestamp: new Date().toISOString(),
         status: 'sent'
       };
-      // 这里可以使用 preferences 或数据库存储记录
       hilog.info(DOMAIN, TAG, 'SMS record saved: %{public}s', JSON.stringify(record));
     } catch (err) {
       hilog.error(DOMAIN, TAG, 'Failed to save SMS record: %{public}s', JSON.stringify(err));
