@@ -1,0 +1,9 @@
+{
+  "name": "ability_link",
+  "version": "1.0.0",
+  "description": "AbilityLink SDK - Cross-application capability discovery and invocation framework",
+  "main": "Index.ets",
+  "author": "WorkflowCelia Team",
+  "license": "Apache-2.0",
+  "dependencies": {}
+}

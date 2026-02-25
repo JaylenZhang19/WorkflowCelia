@@ -1,0 +1,9 @@
+{
+  "module": {
+    "name": "ability_link",
+    "type": "har",
+    "deviceTypes": [
+      "default"
+    ]
+  }
+}

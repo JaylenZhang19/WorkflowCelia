@@ -39,6 +39,10 @@
           ]
         }
       ]
+    },
+    {
+      "name": "ability_link",
+      "srcPath": "./ability_link",
     }
   ]
 }
