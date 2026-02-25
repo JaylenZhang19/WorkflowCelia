@@ -12,7 +12,7 @@ const TAG = 'MockEmailAbilityProvider';
  */
 export class MockEmailAbilityProvider implements IAbilityProvider {
   private static readonly TARGET_BUNDLE = 'com.pumpkin.mockabilityprovider';
-  private static readonly TARGET_ABILITY = 'EmailServiceExtension';
+  private static readonly TARGET_ABILITY = 'EmailServiceAbility';
   private static readonly ACTION = 'action.send.email';
 
   private meta: AbilityMeta = {
