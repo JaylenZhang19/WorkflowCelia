@@ -5,10 +5,9 @@
 
 import { common } from '@kit.AbilityKit';
 import { rpc } from '@kit.IPCKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { InvokeResult, RegistrationInfo } from './types';
+import { logger } from './utils/Logger';
 
-const DOMAIN = 0x3002;
 const TAG = 'AbilityLink.IPC';
 
 export const ABILITY_LINK_REGISTRY_DESCRIPTOR = 'ability_link.registry';
@@ -78,18 +77,21 @@ export class AbilityLinkRegistryStub extends rpc.RemoteObject {
       switch (code) {
         case AbilityLinkIpcCode.REGISTER: {
           const request = readJson<AbilityLinkRegistrationRequest>(data);
+          logger.info(TAG, `Registry register: ${request.registration.bundleName}`);
           this.handler.register(request.registration);
           writeJson(reply, { success: true } as AbilityLinkBasicResponse);
           return true;
         }
         case AbilityLinkIpcCode.UNREGISTER: {
           const request = readJson<AbilityLinkUnregisterRequest>(data);
+          logger.info(TAG, `Registry unregister: ${request.bundleName}`);
           this.handler.unregister?.(request.bundleName);
           writeJson(reply, { success: true } as AbilityLinkBasicResponse);
           return true;
         }
         case AbilityLinkIpcCode.HEARTBEAT: {
           const request = readJson<AbilityLinkHeartbeatRequest>(data);
+          logger.debug(TAG, `Registry heartbeat: ${request.bundleName}`);
           this.handler.heartbeat?.(request.bundleName, request.timestamp);
           writeJson(reply, { success: true } as AbilityLinkBasicResponse);
           return true;
@@ -99,7 +101,7 @@ export class AbilityLinkRegistryStub extends rpc.RemoteObject {
           return false;
       }
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Registry stub error: %{public}s', JSON.stringify(error));
+      logger.error(TAG, `Registry stub error: ${JSON.stringify(error)}`);
       writeJson(reply, { success: false, error: 'Registry stub error' } as AbilityLinkBasicResponse);
       return false;
     }
@@ -131,11 +133,12 @@ export class AbilityLinkProviderStub extends rpc.RemoteObject {
 
     try {
       const request = readJson<AbilityLinkInvokeRequest>(data);
+      logger.info(TAG, `Provider invoke: ${request.capabilityName}`);
       const result = await this.provider.invoke(request.capabilityName, request.inputs);
       writeJson(reply, result);
       return true;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Provider stub error: %{public}s', JSON.stringify(error));
+      logger.error(TAG, `Provider stub error: ${JSON.stringify(error)}`);
       writeJson(reply, {
         success: false,
         error: error instanceof Error ? error.message : 'Invocation error',
@@ -181,10 +184,11 @@ export class AbilityLinkIpcClient {
             reject(new Error('Remote proxy not available'));
             return;
           }
+          logger.debug(TAG, `IPC connected: ${endpoint.bundleName}/${endpoint.abilityName}`);
           resolve({ proxy: remoteProxy, connectId });
         },
         onDisconnect: () => {
-          hilog.info(DOMAIN, TAG, 'IPC disconnected: %{public}s/%{public}s', endpoint.bundleName, endpoint.abilityName);
+          logger.info(TAG, `IPC disconnected: ${endpoint.bundleName}/${endpoint.abilityName}`);
         },
         onFailed: () => {
           reject(new Error('IPC connect failed'));
@@ -231,14 +235,14 @@ export class AbilityLinkIpcClient {
   }
 
   private disconnect(connectId: number): void {
-    if (connectId >= 0) {
-      try {
-        this.context.disconnectServiceExtensionAbility(connectId);
-      } catch (error) {
-        hilog.warn(DOMAIN, TAG, 'IPC disconnect error: %{public}s', JSON.stringify(error));
+      if (connectId >= 0) {
+        try {
+          this.context.disconnectServiceExtensionAbility(connectId);
+        } catch (error) {
+          logger.warn(TAG, `IPC disconnect error: ${JSON.stringify(error)}`);
+        }
       }
     }
-  }
 
   private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
     if (timeoutMs <= 0) {

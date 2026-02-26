@@ -3,7 +3,6 @@
  * Helper module for provider apps to register and expose capabilities
  */
 
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common, Want } from '@kit.AbilityKit';
 import {
   AbilityLinkCapability,
@@ -11,8 +10,8 @@ import {
   RegistrationInfo
 } from './types';
 import { AbilityLinkProviderStub, AbilityLinkProviderLike } from './Ipc';
+import { logger } from './utils/Logger';
 
-const DOMAIN = 0x3000;
 const TAG = 'AbilityLink.Provider';
 
 /**
@@ -36,7 +35,7 @@ export abstract class AbilityLinkProvider {
   async initialize(context: common.Context): Promise<void> {
     this.context = context;
     this.isInitialized = true;
-    hilog.info(DOMAIN, TAG, 'Provider initialized: %{public}s', this.getCapability().name);
+    logger.info(TAG, `Provider initialized: ${this.getCapability().name}`);
   }
 
   /**
@@ -99,7 +98,7 @@ export abstract class AbilityLinkProvider {
   dispose(): void {
     this.context = null;
     this.isInitialized = false;
-    hilog.info(DOMAIN, TAG, 'Provider disposed: %{public}s', this.getCapability().name);
+    logger.info(TAG, `Provider disposed: ${this.getCapability().name}`);
   }
 }
 
@@ -170,7 +169,7 @@ export abstract class MultiCapabilityProvider {
     this.context = context;
     this.isInitialized = true;
     const caps = this.getCapabilities();
-    hilog.info(DOMAIN, TAG, 'Multi-capability provider initialized with %{public}d capabilities', caps.length);
+    logger.info(TAG, `Multi-capability provider initialized with ${caps.length} capabilities`);
   }
 
   /**
@@ -244,7 +243,7 @@ export abstract class MultiCapabilityProvider {
   dispose(): void {
     this.context = null;
     this.isInitialized = false;
-    hilog.info(DOMAIN, TAG, 'Multi-capability provider disposed');
+    logger.info(TAG, 'Multi-capability provider disposed');
   }
 }
 

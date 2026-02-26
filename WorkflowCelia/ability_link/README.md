@@ -26,6 +26,9 @@ ability_link/
 - UI 相关代码使用 `.ets` (ArkTS)
 - 后端逻辑代码使用 `.ts` (TypeScript)
 
+**日志规范：**
+- ability_link 使用自身的 `utils/Logger.ts`（HAR 内部），不依赖 app/entry 下的 logger
+
 ## 构建 HAR 包
 
 ### 环境要求

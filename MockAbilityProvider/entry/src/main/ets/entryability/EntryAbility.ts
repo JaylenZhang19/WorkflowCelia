@@ -15,7 +15,7 @@ export default class EntryAbility extends UIAbility {
       logger.error(TAG, `Failed to set colorMode. Cause: ${JSON.stringify(err)}`);
     }
     logger.info(TAG, 'Ability onCreate');
-    void this.registerCapabilities();
+    this.registerCapabilities();
   }
 
   onDestroy(): void {
@@ -60,6 +60,7 @@ export default class EntryAbility extends UIAbility {
       };
 
       const registrar = new AbilityLinkRegistrar(this.context);
+      logger.info(TAG, 'registerCapabilities start to register');
       const result = await registrar.register(registration);
       if (result.success) {
         logger.info(TAG, 'Capabilities registered successfully');

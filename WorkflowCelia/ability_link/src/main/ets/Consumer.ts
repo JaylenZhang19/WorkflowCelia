@@ -7,7 +7,6 @@
  * - Consumer app maintains a registry of available capabilities
  */
 
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
 import {
   AbilityLinkConfig,
@@ -26,8 +25,8 @@ import {
   AbilityLinkEndpoint,
   AbilityLinkInvokeRequest
 } from './Ipc';
+import { logger } from './utils/Logger';
 
-const DOMAIN = 0x3001;
 const TAG = 'AbilityLink.Consumer';
 
 /**
@@ -67,16 +66,16 @@ export class AbilityLinkConsumer {
     try {
       this.context = context;
       this.ipcClient = new AbilityLinkIpcClient(context);
-      hilog.info(DOMAIN, TAG, 'AbilityLink Consumer initializing...');
+      logger.info(TAG, 'Consumer initializing');
 
-      hilog.info(DOMAIN, TAG, 'AbilityLink Consumer initialized successfully');
+      logger.info(TAG, 'Consumer initialized successfully');
 
       return {
         success: true,
         registeredCount: this.registeredCapabilities.size
       };
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Failed to initialize: %{public}s', JSON.stringify(error));
+      logger.error(TAG, `Failed to initialize: ${JSON.stringify(error)}`);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown initialization error'
@@ -90,11 +89,10 @@ export class AbilityLinkConsumer {
    */
   registerCapabilities(registration: RegistrationInfo): void {
     if (!this.context) {
-      hilog.warn(DOMAIN, TAG, 'SDK not initialized. Registering capabilities before initialize().');
+      logger.warn(TAG, 'SDK not initialized. Registering capabilities before initialize().');
     }
 
-    hilog.info(DOMAIN, TAG, 'Registering %{public}d capabilities from %{public}s',
-      registration.capabilities.length, registration.bundleName);
+    logger.info(TAG, `Registering ${registration.capabilities.length} capabilities from ${registration.bundleName}`);
 
     for (const capability of registration.capabilities) {
       const key = this.getCapabilityKey(registration.bundleName, capability.name);
@@ -117,7 +115,7 @@ export class AbilityLinkConsumer {
       count: registration.capabilities.length
     });
 
-    hilog.info(DOMAIN, TAG, 'Registered %{public}d capabilities', registration.capabilities.length);
+    logger.info(TAG, `Registered ${registration.capabilities.length} capabilities`);
   }
 
   /**
@@ -135,8 +133,7 @@ export class AbilityLinkConsumer {
       }
     }
 
-    hilog.info(DOMAIN, TAG, 'Unregistered %{public}d capabilities from %{public}s',
-      removedCount, bundleName);
+    logger.info(TAG, `Unregistered ${removedCount} capabilities from ${bundleName}`);
   }
 
   /**
@@ -177,7 +174,7 @@ export class AbilityLinkConsumer {
     const invokeTimeout = timeout || this.config.invocationTimeout;
     const capabilityKey = this.getCapabilityKey(bundleName, capabilityName);
 
-    hilog.info(DOMAIN, TAG, 'Invoking capability: %{public}s/%{public}s', bundleName, capabilityName);
+    logger.info(TAG, `Invoking capability: ${bundleName}/${capabilityName}`);
     this.emit(AbilityLinkEvent.INVOCATION_STARTED, { bundleName, capabilityName, inputs });
 
     try {
@@ -212,12 +209,12 @@ export class AbilityLinkConsumer {
         invokeTimeout
       );
 
-      hilog.info(DOMAIN, TAG, 'Capability invoked successfully via IPC');
+      logger.info(TAG, 'Capability invoked successfully via IPC');
 
       this.emit(AbilityLinkEvent.INVOCATION_COMPLETE, result);
       return result;
     } catch (error) {
-      hilog.error(DOMAIN, TAG, 'Invocation failed: %{public}s', JSON.stringify(error));
+      logger.error(TAG, `Invocation failed: ${JSON.stringify(error)}`);
       const result: InvokeResult = {
         success: false,
         error: error instanceof Error ? error.message : 'Invocation failed',
@@ -254,7 +251,7 @@ export class AbilityLinkConsumer {
     this.registeredCapabilities.clear();
     this.eventListeners.clear();
     this.context = null;
-    hilog.info(DOMAIN, TAG, 'AbilityLink Consumer disposed');
+    logger.info(TAG, 'Consumer disposed');
   }
 
   /**
@@ -328,14 +325,13 @@ export class AbilityLinkConsumer {
         try {
           listener(data);
         } catch (error) {
-          hilog.warn(DOMAIN, TAG, 'Event listener error: %{public}s', JSON.stringify(error));
+      logger.warn(TAG, `Event listener error: ${JSON.stringify(error)}`);
         }
       });
     }
 
     if (this.config.debug) {
-      hilog.debug(DOMAIN, TAG, 'Event emitted: %{public}s, data: %{public}s',
-        event, JSON.stringify(data));
+      logger.debug(TAG, `Event emitted: ${event}, data: ${JSON.stringify(data)}`);
     }
   }
 }
