@@ -1,9 +1,8 @@
 import { IAbilityProvider, AbilityMeta, AbilityDefinition, AbilityCategory, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common, Want } from '@kit.AbilityKit';
 import { DataType } from '../core/models/DataType';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x2000;
 const TAG = 'MockSmsAbilityProvider';
 
 /**
@@ -79,14 +78,14 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
   }
 
   async initialize(): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'MockSmsAbilityProvider initialized');
+    logger.info(TAG, 'MockSmsAbilityProvider initialized');
   }
 
   /**
    * Execute SMS sending via cross-app Want
    */
   async execute(inputs: Record<string, any>, context: AbilityContext): Promise<AbilityResult> {
-    hilog.info(DOMAIN, TAG, 'Executing SMS ability, inputs: %{public}s', JSON.stringify(inputs));
+    logger.info(TAG, `Executing SMS ability, inputs: ${JSON.stringify(inputs)}`);
 
     try {
       const { phoneNumber, message } = inputs;
@@ -108,7 +107,7 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
       // Fallback: mock execution
       return this.mockExecute(phoneNumber, message);
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to execute SMS ability: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to execute SMS ability: ${JSON.stringify(err)}`);
       return {
         success: false,
         error: `Execution failed: ${JSON.stringify(err)}`,
@@ -136,7 +135,7 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
       // Start the ability
       await this.context.startAbility(wantInfo);
 
-      hilog.info(DOMAIN, TAG, 'SMS Want sent successfully to %{public}s', phoneNumber);
+      logger.info(TAG, `SMS Want sent successfully to ${phoneNumber}`);
 
       return {
         success: true,
@@ -150,7 +149,7 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
         }
       };
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to send SMS via Want: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to send SMS via Want: ${JSON.stringify(err)}`);
       // Fallback to mock execution
       return this.mockExecute(phoneNumber, message);
     }
@@ -160,7 +159,7 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
    * Mock execution when cross-app communication is not available
    */
   private mockExecute(phoneNumber: string, message: string): AbilityResult {
-    hilog.info(DOMAIN, TAG, '[MOCK] SMS sent to %{public}s, content: %{public}s', phoneNumber, message);
+    logger.info(TAG, `[MOCK] SMS sent to ${phoneNumber}, content: ${message}`);
 
     return {
       success: true,
@@ -176,6 +175,6 @@ export class MockSmsAbilityProvider implements IAbilityProvider {
 
   dispose(): void {
     this.context = null;
-    hilog.info(DOMAIN, TAG, 'MockSmsAbilityProvider disposed');
+    logger.info(TAG, 'MockSmsAbilityProvider disposed');
   }
 }

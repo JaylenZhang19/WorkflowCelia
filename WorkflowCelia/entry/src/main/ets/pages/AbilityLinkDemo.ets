@@ -3,10 +3,10 @@
  * Demonstrates capability registration and invocation
  */
 
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { promptAction } from '@kit.ArkUI';
 import { AbilityLinkService, CapabilityInfo } from '../services/AbilityLinkService';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x2100;
 const TAG = 'AbilityLinkDemo';
 
 @Entry
@@ -26,7 +26,7 @@ struct AbilityLinkDemo {
   private abilityLinkService: AbilityLinkService = AbilityLinkService.getInstance();
 
   aboutToAppear(): void {
-    hilog.info(DOMAIN, TAG, 'AbilityLinkDemo aboutToAppear');
+    logger.info(TAG, 'AbilityLinkDemo aboutToAppear');
     // Load registered capabilities
     this.loadCapabilities();
   }
@@ -132,6 +132,47 @@ struct AbilityLinkDemo {
     }
   }
 
+  /**
+   * Quick IPC ping using a mock SMS request.
+   */
+  async testIpc(): Promise<void> {
+    const target = this.capabilities.find(cap => cap.capabilityName === 'sms.send')
+      ?? this.capabilities[0];
+
+    if (!target) {
+      this.statusMessage = 'No capabilities registered yet';
+      promptAction.showToast({ message: 'No capabilities registered yet' });
+      return;
+    }
+
+    this.isLoading = true;
+    this.statusMessage = `Testing IPC: ${target.displayName}`;
+
+    try {
+      const result = await this.abilityLinkService.invokeCapability(
+        target.bundleName,
+        target.capabilityName,
+        target.capabilityName === 'sms.send'
+          ? { "phoneNumber": "10086", "message": "IPC ping" }
+          : {}
+      );
+
+      if (result.success) {
+        this.statusMessage = `IPC test success (${target.capabilityName})`;
+        promptAction.showToast({ message: 'IPC test success' });
+      } else {
+        this.statusMessage = `IPC test failed: ${result.error}`;
+        promptAction.showToast({ message: `IPC test failed: ${result.error || 'unknown'}` });
+      }
+    } catch (err) {
+      this.statusMessage = `IPC test error: ${JSON.stringify(err)}`;
+      promptAction.showToast({ message: 'IPC test exception' });
+      logger.error(TAG, `IPC test error: ${JSON.stringify(err)}`);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   build() {
     Column() {
       // Header
@@ -158,6 +199,10 @@ struct AbilityLinkDemo {
       Row() {
         Button('Refresh List')
           .onClick(() => this.loadCapabilities())
+
+        Button('Test IPC')
+          .onClick(() => this.testIpc())
+          .margin({ left: 10 })
       }
       .width('100%')
       .padding(16)

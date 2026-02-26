@@ -6,6 +6,10 @@
 
 MockAbilityProvider 是一个模拟应用，用于演示如何为 HarmonyOS 应用提供可被其他应用发现和调用的能力。它实现了 AbilityLink SDK 的 Provider 接口，提供模拟的短信和邮件发送能力。
 
+## 日志规范
+
+项目统一使用 `MockAbilityProvider/entry/src/main/ets/utils/Logger.ts` 中的 `logger` 进行日志输出，避免分散域名导致日志难以检索。
+
 ### 核心特性
 
 - 🔌 **AbilityLink 集成** - 完整实现 AbilityLink Provider 接口

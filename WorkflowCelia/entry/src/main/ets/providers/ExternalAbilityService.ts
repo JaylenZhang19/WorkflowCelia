@@ -1,10 +1,9 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
 import { MockSmsAbilityProvider } from './MockSmsAbilityProvider';
 import { MockEmailAbilityProvider } from './MockEmailAbilityProvider';
 import { IAbilityProvider, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x2100;
 const TAG = 'ExternalAbilityService';
 
 /**
@@ -73,7 +72,7 @@ export class ExternalAbilityService {
     await this.smsProvider.initialize();
     await this.emailProvider.initialize();
 
-    hilog.info(DOMAIN, TAG, 'ExternalAbilityService initialized');
+    logger.info(TAG, 'ExternalAbilityService initialized');
   }
 
   /**
@@ -82,7 +81,7 @@ export class ExternalAbilityService {
    * @returns 调用结果
    */
   async sendSms(params: SmsParams): Promise<AbilityCallResult> {
-    hilog.info(DOMAIN, TAG, 'Sending SMS to %{public}s', params.phoneNumber);
+    logger.info(TAG, `Sending SMS to ${params.phoneNumber}`);
 
     try {
       const abilityContext = this.createAbilityContext();
@@ -98,7 +97,7 @@ export class ExternalAbilityService {
         errorCode: result.errorCode
       };
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to send SMS: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to send SMS: ${JSON.stringify(err)}`);
       return {
         success: false,
         error: `SMS send failed: ${JSON.stringify(err)}`,
@@ -113,7 +112,7 @@ export class ExternalAbilityService {
    * @returns 调用结果
    */
   async sendEmail(params: EmailParams): Promise<AbilityCallResult> {
-    hilog.info(DOMAIN, TAG, 'Sending Email to %{public}s', JSON.stringify(params.to));
+    logger.info(TAG, `Sending Email to ${JSON.stringify(params.to)}`);
 
     try {
       const abilityContext = this.createAbilityContext();
@@ -136,7 +135,7 @@ export class ExternalAbilityService {
         errorCode: result.errorCode
       };
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to send Email: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to send Email: ${JSON.stringify(err)}`);
       return {
         success: false,
         error: `Email send failed: ${JSON.stringify(err)}`,
@@ -177,9 +176,9 @@ export class ExternalAbilityService {
         // Implement variable storage if needed
       },
       log: (level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void => {
-        hilog.info(DOMAIN, TAG, '[%{public}s] %{public}s', level.toUpperCase(), message);
+        logger.info(TAG, `[${level.toUpperCase()}] ${message}`);
         if (data) {
-          hilog.info(DOMAIN, TAG, 'Data: %{public}s', JSON.stringify(data));
+          logger.info(TAG, `Data: ${JSON.stringify(data)}`);
         }
       },
       isCancelled: (): boolean => false,
@@ -194,6 +193,6 @@ export class ExternalAbilityService {
     this.smsProvider.dispose();
     this.emailProvider.dispose();
     this.context = null;
-    hilog.info(DOMAIN, TAG, 'ExternalAbilityService disposed');
+    logger.info(TAG, 'ExternalAbilityService disposed');
   }
 }

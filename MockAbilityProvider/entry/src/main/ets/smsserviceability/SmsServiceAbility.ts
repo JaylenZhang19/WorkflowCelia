@@ -1,6 +1,5 @@
 import { AppServiceExtensionAbility, Want, common } from '@kit.AbilityKit';
 import { rpc } from '@kit.IPCKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   AbilityLinkProvider,
   AbilityLinkCapability,
@@ -9,8 +8,8 @@ import {
   InvokeResult,
   createProviderStub
 } from 'ability_link';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x1000;
 const TAG = 'SmsServiceAbility';
 
 /**
@@ -42,18 +41,18 @@ export default class SmsServiceAbility extends AppServiceExtensionAbility {
   private provider: SmsAbilityProvider | null = null;
 
   onCreate(): void {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onCreate');
+    logger.info(TAG, 'SmsServiceAbility onCreate');
     this.provider = new SmsAbilityProvider();
     void this.provider.initialize(this.context);
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onDestroy');
+    logger.info(TAG, 'SmsServiceAbility onDestroy');
     this.provider?.dispose();
   }
 
   onConnect(want: Want): rpc.RemoteObject {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onConnect');
+    logger.info(TAG, 'SmsServiceAbility onConnect');
     if (!this.provider) {
       this.provider = new SmsAbilityProvider();
       void this.provider.initialize(this.context);
@@ -62,14 +61,14 @@ export default class SmsServiceAbility extends AppServiceExtensionAbility {
   }
 
   async onStartCommand(want: Want, startId: number): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'SmsServiceAbility onStartCommand, startId: %{public}d', startId);
+    logger.info(TAG, `SmsServiceAbility onStartCommand, startId: ${startId}`);
 
     try {
       const phoneNumber = want.parameters?.['phoneNumber'] as string;
       const message = want.parameters?.['message'] as string;
 
       if (!phoneNumber || !message) {
-        hilog.error(DOMAIN, TAG, 'Invalid parameters: missing phoneNumber or message');
+        logger.error(TAG, 'Invalid parameters: missing phoneNumber or message');
         return;
       }
 
@@ -78,9 +77,9 @@ export default class SmsServiceAbility extends AppServiceExtensionAbility {
         'message': message
       };
       const result = await this.provider?.invoke(inputs);
-      hilog.info(DOMAIN, TAG, 'SMS send result: %{public}s', JSON.stringify(result));
+      logger.info(TAG, `SMS send result: ${JSON.stringify(result)}`);
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to handle SMS request: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to handle SMS request: ${JSON.stringify(err)}`);
     }
   }
 }
@@ -112,7 +111,7 @@ class SmsAbilityProvider extends AbilityLinkProvider {
     await this.delay(500);
 
     const messageId = `SMS_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    hilog.info(DOMAIN, TAG, 'Mock SMS sent to %{public}s, messageId: %{public}s', phoneNumber, messageId);
+    logger.info(TAG, `Mock SMS sent to ${phoneNumber}, messageId: ${messageId}`);
 
     return {
       success: true,

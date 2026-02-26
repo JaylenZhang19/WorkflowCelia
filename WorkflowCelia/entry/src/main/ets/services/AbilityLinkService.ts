@@ -3,8 +3,8 @@
  * Unified service for capability registration and invocation using AbilityLink SDK
  */
 
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
+import { logger } from '../utils/Logger';
 import {
   AbilityLinkConsumer,
   InvokeResult,
@@ -13,7 +13,6 @@ import {
   RegisteredCapability
 } from 'ability_link';
 
-const DOMAIN = 0x2100;
 const TAG = 'AbilityLinkService';
 
 /**
@@ -69,7 +68,7 @@ export class AbilityLinkService {
    */
   async initialize(context: common.UIAbilityContext): Promise<void> {
     if (this.isInitialized) {
-      hilog.warn(DOMAIN, TAG, 'Service already initialized');
+      logger.warn(TAG, 'Service already initialized');
       return;
     }
 
@@ -77,7 +76,7 @@ export class AbilityLinkService {
     await this.consumer.initialize(context);
     this.isInitialized = true;
 
-    hilog.info(DOMAIN, TAG, 'AbilityLink Service initialized');
+    logger.info(TAG, 'AbilityLink Service initialized');
   }
 
   /**
@@ -85,12 +84,11 @@ export class AbilityLinkService {
    */
   registerCapabilities(registration: RegistrationInfo): void {
     if (!this.isInitialized) {
-      hilog.warn(DOMAIN, TAG, 'Service not initialized. Registering capabilities in cold state.');
+      logger.warn(TAG, 'Service not initialized. Registering capabilities in cold state.');
     }
 
     this.consumer.registerCapabilities(registration);
-    hilog.info(DOMAIN, TAG, 'Registered %{public}d capabilities from %{public}s',
-      registration.capabilities.length, registration.bundleName);
+    logger.info(TAG, `Registered ${registration.capabilities.length} capabilities from ${registration.bundleName}`);
   }
 
   /**
@@ -98,7 +96,7 @@ export class AbilityLinkService {
    */
   unregisterCapabilities(bundleName: string): void {
     if (!this.isInitialized) {
-      hilog.warn(DOMAIN, TAG, 'Service not initialized. Unregistering capabilities in cold state.');
+      logger.warn(TAG, 'Service not initialized. Unregistering capabilities in cold state.');
     }
 
     this.consumer.unregisterCapabilities(bundleName);
@@ -124,7 +122,7 @@ export class AbilityLinkService {
       throw new Error('Service not initialized');
     }
 
-    hilog.info(DOMAIN, TAG, 'Invoking capability: %{public}s/%{public}s', bundleName, capabilityName);
+    logger.info(TAG, `Invoking capability: ${bundleName}/${capabilityName}`);
 
     return this.consumer.invoke(bundleName, capabilityName, inputs);
   }
@@ -151,7 +149,7 @@ export class AbilityLinkService {
     this.consumer.dispose();
     this.context = null;
     this.isInitialized = false;
-    hilog.info(DOMAIN, TAG, 'AbilityLink Service disposed');
+    logger.info(TAG, 'AbilityLink Service disposed');
   }
 
   /**
@@ -159,30 +157,27 @@ export class AbilityLinkService {
    */
   private setupEventListeners(): void {
     this.consumer.on(AbilityLinkEvent.CAPABILITY_REGISTERED, (data: Record<string, Object>) => {
-      hilog.info(DOMAIN, TAG, 'New capability registered: %{public}s/%{public}s',
-        data.bundleName as string, data.capabilityName as string);
+      logger.info(TAG, `New capability registered: ${data.bundleName as string}/${data.capabilityName as string}`);
     });
 
     this.consumer.on(AbilityLinkEvent.CAPABILITY_UNREGISTERED, (data: Record<string, Object>) => {
-      hilog.info(DOMAIN, TAG, 'Capability unregistered: %{public}s/%{public}s',
-        data.bundleName as string, data.capabilityName as string);
+      logger.info(TAG, `Capability unregistered: ${data.bundleName as string}/${data.capabilityName as string}`);
     });
 
     this.consumer.on(AbilityLinkEvent.REGISTRATION_COMPLETE, (data: Record<string, Object>) => {
-      hilog.info(DOMAIN, TAG, 'Registration complete: %{public}d capabilities', data.count as number);
+      logger.info(TAG, `Registration complete: ${data.count as number} capabilities`);
     });
 
     this.consumer.on(AbilityLinkEvent.INVOCATION_STARTED, (data: Record<string, Object>) => {
-      hilog.info(DOMAIN, TAG, 'Invocation started: %{public}s/%{public}s',
-        data.bundleName as string, data.capabilityName as string);
+      logger.info(TAG, `Invocation started: ${data.bundleName as string}/${data.capabilityName as string}`);
     });
 
     this.consumer.on(AbilityLinkEvent.INVOCATION_COMPLETE, (data: Record<string, Object>) => {
-      hilog.info(DOMAIN, TAG, 'Invocation completed: %{public}s', (data.success as boolean) ? 'success' : 'failed');
+      logger.info(TAG, `Invocation completed: ${(data.success as boolean) ? 'success' : 'failed'}`);
     });
 
     this.consumer.on(AbilityLinkEvent.INVOCATION_ERROR, (data: Record<string, Object>) => {
-      hilog.error(DOMAIN, TAG, 'Invocation error: %{public}s', data.error as string);
+      logger.error(TAG, `Invocation error: ${data.error as string}`);
     });
   }
 

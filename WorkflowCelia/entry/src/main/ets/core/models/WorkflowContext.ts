@@ -134,7 +134,7 @@ export class WorkflowContext {
       data
     });
 
-    // Use hilog for output
+    // Use logger for output
     switch (level) {
       case 'debug':
         logger.debug(tag, message, JSON.stringify(data || {}));

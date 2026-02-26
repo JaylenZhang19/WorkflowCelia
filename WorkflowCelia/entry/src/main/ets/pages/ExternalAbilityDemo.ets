@@ -5,9 +5,8 @@
 import { ExternalAbilityService, SmsParams, EmailParams } from '../providers/ExternalAbilityService';
 import { BackgroundTaskExecutor, TaskType, TaskDefinition } from '../core/engine/BackgroundTaskExecutor';
 import { promptAction } from '@kit.ArkUI';
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x3000;
 const TAG = 'ExternalAbilityDemo';
 
 @Entry
@@ -32,7 +31,7 @@ struct ExternalAbilityDemo {
   @State tasks: TaskDefinition[] = [];
 
   aboutToAppear() {
-    hilog.info(DOMAIN, TAG, 'ExternalAbilityDemo aboutToAppear');
+    logger.info(TAG, 'ExternalAbilityDemo aboutToAppear');
   }
 
   aboutToDisappear() {

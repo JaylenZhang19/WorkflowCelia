@@ -9,6 +9,7 @@ import {
   WorkflowEngine,
   initializeBuiltInActions
 } from '../core/index';
+import router from '@ohos.router';
 
 @Entry
 @Component
@@ -94,10 +95,22 @@ struct WorkflowsList {
           .fontSize(28)
           .fontWeight(FontWeight.Bold)
           .fontColor('#1C1C1E')
+
+        Button('AbilityLink Demo')
+          .height(32)
+          .fontSize(12)
+          .padding({ left: 10, right: 10 })
+          .backgroundColor('#007AFF')
+          .fontColor('#FFFFFF')
+          .margin({ left: 12 })
+          .onClick(() => {
+            router.pushUrl({ url: 'pages/AbilityLinkDemo' });
+          })
       }
       .width('100%')
       .height(56)
       .padding({ left: 20, right: 20 })
+      .justifyContent(FlexAlign.SpaceBetween)
       .backgroundColor('#F2F2F7')
 
       // Content

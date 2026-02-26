@@ -2,9 +2,8 @@
  * MockAbilityProvider Entry Page
  * Displays available capabilities and mock sending records
  */
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x4000;
 const TAG = 'MockAbilityProvider';
 
 @Entry
@@ -13,7 +12,7 @@ struct Index {
   @State message: string = 'Mock Ability Provider';
 
   aboutToAppear() {
-    hilog.info(DOMAIN, TAG, 'MockAbilityProvider Index aboutToAppear');
+    logger.info(TAG, 'MockAbilityProvider Index aboutToAppear');
   }
 
   build() {

@@ -1,8 +1,7 @@
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common } from '@kit.AbilityKit';
 import { ExternalAbilityService, SmsParams, EmailParams, AbilityCallResult } from '../../providers/ExternalAbilityService';
+import { logger } from '../../utils/Logger';
 
-const DOMAIN = 0x2200;
 const TAG = 'BackgroundTaskExecutor';
 
 /**
@@ -72,7 +71,7 @@ export class BackgroundTaskExecutor {
   async initialize(context: common.UIAbilityContext): Promise<void> {
     this.context = context;
     await this.abilityService.initialize(context);
-    hilog.info(DOMAIN, TAG, 'BackgroundTaskExecutor initialized');
+    logger.info(TAG, 'BackgroundTaskExecutor initialized');
   }
 
   /**
@@ -87,7 +86,7 @@ export class BackgroundTaskExecutor {
     };
 
     this.taskQueue.push(taskDefinition);
-    hilog.info(DOMAIN, TAG, 'Task added: %{public}s', taskDefinition.id);
+    logger.info(TAG, `Task added: ${taskDefinition.id}`);
 
     // 启动任务处理
     void this.processQueue();
@@ -107,7 +106,7 @@ export class BackgroundTaskExecutor {
       startedAt: Date.now()
     };
 
-    hilog.info(DOMAIN, TAG, 'Executing task immediately: %{public}s', taskDefinition.id);
+    logger.info(TAG, `Executing task immediately: ${taskDefinition.id}`);
 
     try {
       const result = await this.executeTaskInternal(taskDefinition);
@@ -141,7 +140,7 @@ export class BackgroundTaskExecutor {
       task.status = TaskStatus.RUNNING;
       task.startedAt = Date.now();
 
-      hilog.info(DOMAIN, TAG, 'Processing task: %{public}s', task.id);
+      logger.info(TAG, `Processing task: ${task.id}`);
 
       try {
         const result = await this.executeTaskInternal(task);
@@ -150,11 +149,11 @@ export class BackgroundTaskExecutor {
       } catch (err) {
         task.error = JSON.stringify(err);
         task.status = TaskStatus.FAILED;
-        hilog.error(DOMAIN, TAG, 'Task failed: %{public}s, error: %{public}s', task.id, JSON.stringify(err));
+        logger.error(TAG, `Task failed: ${task.id}, error: ${JSON.stringify(err)}`);
       }
 
       task.completedAt = Date.now();
-      hilog.info(DOMAIN, TAG, 'Task completed: %{public}s, status: %{public}s', task.id, task.status);
+      logger.info(TAG, `Task completed: ${task.id}, status: ${task.status}`);
     }
 
     this.isProcessing = false;
@@ -182,7 +181,7 @@ export class BackgroundTaskExecutor {
    * 执行短信任务
    */
   private async executeSmsTask(params: SmsParams): Promise<AbilityCallResult> {
-    hilog.info(DOMAIN, TAG, 'Executing SMS task');
+    logger.info(TAG, 'Executing SMS task');
     return await this.abilityService.sendSms(params);
   }
 
@@ -190,7 +189,7 @@ export class BackgroundTaskExecutor {
    * 执行邮件任务
    */
   private async executeEmailTask(params: EmailParams): Promise<AbilityCallResult> {
-    hilog.info(DOMAIN, TAG, 'Executing Email task');
+    logger.info(TAG, 'Executing Email task');
     return await this.abilityService.sendEmail(params);
   }
 
@@ -237,7 +236,7 @@ export class BackgroundTaskExecutor {
     const task = this.taskQueue.find((t) => t.id === taskId && t.status === TaskStatus.PENDING);
     if (task) {
       task.status = TaskStatus.CANCELLED;
-      hilog.info(DOMAIN, TAG, 'Task cancelled: %{public}s', taskId);
+      logger.info(TAG, `Task cancelled: ${taskId}`);
       return true;
     }
     return false;
@@ -255,7 +254,7 @@ export class BackgroundTaskExecutor {
       t.status !== TaskStatus.COMPLETED && t.status !== TaskStatus.CANCELLED
     );
 
-    hilog.info(DOMAIN, TAG, 'Cleared %{public}d completed tasks', completedCount);
+    logger.info(TAG, `Cleared ${completedCount} completed tasks`);
     return completedCount;
   }
 
@@ -288,6 +287,6 @@ export class BackgroundTaskExecutor {
     this.isProcessing = false;
     this.context = null;
     this.abilityService.dispose();
-    hilog.info(DOMAIN, TAG, 'BackgroundTaskExecutor disposed');
+    logger.info(TAG, 'BackgroundTaskExecutor disposed');
   }
 }

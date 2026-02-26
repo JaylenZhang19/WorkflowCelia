@@ -1,6 +1,5 @@
 import { AppServiceExtensionAbility, Want, common } from '@kit.AbilityKit';
 import { rpc } from '@kit.IPCKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   AbilityLinkProvider,
   AbilityLinkCapability,
@@ -9,8 +8,8 @@ import {
   InvokeResult,
   createProviderStub
 } from 'ability_link';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x1001;
 const TAG = 'EmailServiceAbility';
 
 /**
@@ -46,18 +45,18 @@ export default class EmailServiceAbility extends AppServiceExtensionAbility {
   private provider: EmailAbilityProvider | null = null;
 
   onCreate(): void {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onCreate');
+    logger.info(TAG, 'EmailServiceAbility onCreate');
     this.provider = new EmailAbilityProvider();
     void this.provider.initialize(this.context);
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onDestroy');
+    logger.info(TAG, 'EmailServiceAbility onDestroy');
     this.provider?.dispose();
   }
 
   onConnect(want: Want): rpc.RemoteObject {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onConnect');
+    logger.info(TAG, 'EmailServiceAbility onConnect');
     if (!this.provider) {
       this.provider = new EmailAbilityProvider();
       void this.provider.initialize(this.context);
@@ -66,7 +65,7 @@ export default class EmailServiceAbility extends AppServiceExtensionAbility {
   }
 
   async onStartCommand(want: Want, startId: number): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onStartCommand, startId: %{public}d', startId);
+    logger.info(TAG, `EmailServiceAbility onStartCommand, startId: ${startId}`);
 
     try {
       const to = want.parameters?.['to'] as string[];
@@ -74,7 +73,7 @@ export default class EmailServiceAbility extends AppServiceExtensionAbility {
       const body = want.parameters?.['body'] as string;
 
       if (!to || to.length === 0 || !subject) {
-        hilog.error(DOMAIN, TAG, 'Invalid parameters: missing recipients or subject');
+        logger.error(TAG, 'Invalid parameters: missing recipients or subject');
         return;
       }
 
@@ -84,9 +83,9 @@ export default class EmailServiceAbility extends AppServiceExtensionAbility {
         'body': body
       };
       const result = await this.provider?.invoke(inputs);
-      hilog.info(DOMAIN, TAG, 'Email send result: %{public}s', JSON.stringify(result));
+      logger.info(TAG, `Email send result: ${JSON.stringify(result)}`);
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to handle Email request: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to handle Email request: ${JSON.stringify(err)}`);
     }
   }
 }
@@ -119,7 +118,7 @@ class EmailAbilityProvider extends AbilityLinkProvider {
     await this.delay(800);
 
     const messageId = `EMAIL_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    hilog.info(DOMAIN, TAG, 'Mock Email sent to %{public}s, messageId: %{public}s', JSON.stringify(to), messageId);
+    logger.info(TAG, `Mock Email sent to ${JSON.stringify(to)}, messageId: ${messageId}`);
 
     return {
       success: true,

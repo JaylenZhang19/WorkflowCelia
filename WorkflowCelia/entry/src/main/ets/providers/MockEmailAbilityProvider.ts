@@ -1,9 +1,8 @@
 import { IAbilityProvider, AbilityMeta, AbilityDefinition, AbilityCategory, AbilityResult, AbilityContext } from '../abilities/IAbilityProvider';
-import { hilog } from '@kit.PerformanceAnalysisKit';
 import { common, Want } from '@kit.AbilityKit';
 import { DataType } from '../core/models/DataType';
+import { logger } from '../utils/Logger';
 
-const DOMAIN = 0x2001;
 const TAG = 'MockEmailAbilityProvider';
 
 /**
@@ -102,14 +101,14 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
   }
 
   async initialize(): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'MockEmailAbilityProvider initialized');
+    logger.info(TAG, 'MockEmailAbilityProvider initialized');
   }
 
   /**
    * Execute Email sending via cross-app Want
    */
   async execute(inputs: Record<string, any>, context: AbilityContext): Promise<AbilityResult> {
-    hilog.info(DOMAIN, TAG, 'Executing Email ability, inputs: %{public}s', JSON.stringify(inputs));
+    logger.info(TAG, `Executing Email ability, inputs: ${JSON.stringify(inputs)}`);
 
     try {
       const { to, subject, body, cc, bcc, isHtml } = inputs;
@@ -131,7 +130,7 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
       // Fallback: mock execution
       return this.mockExecute(to, subject, body);
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to execute Email ability: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to execute Email ability: ${JSON.stringify(err)}`);
       return {
         success: false,
         error: `Execution failed: ${JSON.stringify(err)}`,
@@ -170,7 +169,7 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
       // Start the ability
       await this.context.startAbility(wantInfo);
 
-      hilog.info(DOMAIN, TAG, 'Email Want sent successfully to %{public}s', JSON.stringify(to));
+      logger.info(TAG, `Email Want sent successfully to ${JSON.stringify(to)}`);
 
       return {
         success: true,
@@ -184,7 +183,7 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
         }
       };
     } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Failed to send Email via Want: %{public}s', JSON.stringify(err));
+      logger.error(TAG, `Failed to send Email via Want: ${JSON.stringify(err)}`);
       // Fallback to mock execution
       return this.mockExecute(to, subject, body);
     }
@@ -194,7 +193,7 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
    * Mock execution when cross-app communication is not available
    */
   private mockExecute(to: string[], subject: string, body: string): AbilityResult {
-    hilog.info(DOMAIN, TAG, '[MOCK] Email sent to %{public}s, subject: %{public}s', JSON.stringify(to), subject);
+    logger.info(TAG, `[MOCK] Email sent to ${JSON.stringify(to)}, subject: ${subject}`);
 
     return {
       success: true,
@@ -210,6 +209,6 @@ export class MockEmailAbilityProvider implements IAbilityProvider {
 
   dispose(): void {
     this.context = null;
-    hilog.info(DOMAIN, TAG, 'MockEmailAbilityProvider disposed');
+    logger.info(TAG, 'MockEmailAbilityProvider disposed');
   }
 }
