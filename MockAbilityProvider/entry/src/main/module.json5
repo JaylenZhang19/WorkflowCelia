@@ -13,7 +13,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "srcEntry": "./ets/entryability/EntryAbility.ts",
         "description": "$string:EntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
@@ -35,7 +35,7 @@
     "extensionAbilities": [
       {
         "name": "EntryBackupAbility",
-        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ets",
+        "srcEntry": "./ets/entrybackupability/EntryBackupAbility.ts",
         "type": "backup",
         "exported": false,
         "metadata": [
@@ -47,7 +47,7 @@
       },
       {
         "name": "SmsServiceAbility",
-        "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ets",
+        "srcEntry": "./ets/smsserviceability/SmsServiceAbility.ts",
         "type": "appService",
         "exported": true,
         "permissions": [
@@ -63,7 +63,7 @@
       },
       {
         "name": "EmailServiceAbility",
-        "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ets",
+        "srcEntry": "./ets/emailserviceability/EmailServiceAbility.ts",
         "type": "appService",
         "exported": true,
         "permissions": [

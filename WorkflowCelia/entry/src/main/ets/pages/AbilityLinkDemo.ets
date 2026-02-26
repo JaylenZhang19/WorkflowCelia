@@ -5,8 +5,6 @@
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AbilityLinkService, CapabilityInfo } from '../services/AbilityLinkService';
-import { InvokeResult, RegistrationInfo, AbilityCategory, AbilityLinkCapability,
-  CapabilityDataType } from 'ability_link';
 
 const DOMAIN = 0x2100;
 const TAG = 'AbilityLinkDemo';
@@ -16,7 +14,7 @@ const TAG = 'AbilityLinkDemo';
 struct AbilityLinkDemo {
   @State capabilities: CapabilityInfo[] = [];
   @State isLoading: boolean = false;
-  @State statusMessage: string = 'Register capabilities to get started';
+  @State statusMessage: string = 'Waiting for provider registration via IPC';
   @State selectedCapability: CapabilityInfo | null = null;
 
   @State smsPhoneNumber: string = '';
@@ -45,67 +43,6 @@ struct AbilityLinkDemo {
     this.statusMessage = this.capabilities.length > 0
       ? `Found ${this.capabilities.length} registered capabilities`
       : 'No capabilities registered yet';
-  }
-
-  /**
-   * Register MockAbilityProvider capabilities (demo)
-   */
-  registerMockProvider(): void {
-    const registration: RegistrationInfo = {
-      bundleName: 'com.pumpkin.mockabilityprovider',
-      bundleDisplayName: 'MockAbility Provider',
-      capabilities: [
-        {
-          name: 'sms.send',
-          displayName: '发送短信',
-          description: '通过 MockAbilityProvider 发送短信',
-          version: '1.0.0',
-          category: AbilityCategory.COMMUNICATION,
-          inputs: [
-            { name: 'phoneNumber', type: CapabilityDataType.STRING, required: true, description: '电话号码' },
-            { name: 'message', type: CapabilityDataType.STRING, required: true, description: '短信内容' }
-          ],
-          outputs: [
-            { name: 'success', type: CapabilityDataType.BOOLEAN, required: true, description: '是否成功' },
-            { name: 'messageId', type: CapabilityDataType.STRING, required: false, description: '消息 ID' }
-          ],
-          permissions: ['ohos.permission.SEND_MESSAGES'],
-          requiresConfirmation: false
-        },
-        {
-          name: 'email.send',
-          displayName: '发送邮件',
-          description: '通过 MockAbilityProvider 发送邮件',
-          version: '1.0.0',
-          category: AbilityCategory.COMMUNICATION,
-          inputs: [
-            { name: 'to', type: CapabilityDataType.ARRAY, required: true, description: '收件人列表' },
-            { name: 'subject', type: CapabilityDataType.STRING, required: true, description: '主题' },
-            { name: 'body', type: CapabilityDataType.STRING, required: true, description: '正文' }
-          ],
-          outputs: [
-            { name: 'success', type: CapabilityDataType.BOOLEAN, required: true, description: '是否成功' },
-            { name: 'messageId', type: CapabilityDataType.STRING, required: false, description: '消息 ID' }
-          ],
-          permissions: ['ohos.permission.INTERNET'],
-          requiresConfirmation: false
-        }
-      ]
-    };
-
-    this.abilityLinkService.registerCapabilities(registration);
-    this.loadCapabilities();
-    this.statusMessage = 'MockAbilityProvider registered successfully';
-  }
-
-  /**
-   * Unregister MockAbilityProvider capabilities (demo)
-   */
-  unregisterMockProvider(): void {
-    this.abilityLinkService.unregisterCapabilities('com.pumpkin.mockabilityprovider');
-    this.loadCapabilities();
-    this.statusMessage = 'MockAbilityProvider unregistered';
-    this.selectedCapability = null;
   }
 
   /**
@@ -216,19 +153,6 @@ struct AbilityLinkDemo {
       .width('100%')
       .padding(12)
       .backgroundColor('#F5F5F5')
-
-      // Registration Buttons
-      Row() {
-        Button('Register Mock Provider')
-          .onClick(() => this.registerMockProvider())
-
-        Button('Unregister')
-          .onClick(() => this.unregisterMockProvider())
-          .margin({ left: 10 })
-      }
-      .width('100%')
-      .padding(16)
-      .justifyContent(FlexAlign.Center)
 
       // Refresh Button
       Row() {

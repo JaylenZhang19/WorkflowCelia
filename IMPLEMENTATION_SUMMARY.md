@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-AbilityLink SDK 是一个用于 HarmonyOS 应用间能力发现与调用的框架，采用 HAR 包形式组织代码，支持动态发现和调用其他应用提供的能力。
+AbilityLink SDK 是一个用于 HarmonyOS 应用间能力注册与调用的框架，采用 HAR 包形式组织代码，支持 Provider 通过 IPC 注册能力并由 WorkflowCelia 调用。
 
 ## 代码规范
 
@@ -19,7 +19,8 @@ WorkflowCelia/ability_link/
 ├── src/main/ets/
 │   ├── types.ts               ← TypeScript: 类型定义
 │   ├── ProviderHelper.ts      ← TypeScript: Provider 基类
-│   └── Consumer.ts            ← TypeScript: Consumer SDK
+│   ├── Consumer.ts            ← TypeScript: Consumer SDK
+│   └── Ipc.ts                 ← TypeScript: IPC 协议与工具
 ├── Index.ets                  ← ETS: 模块入口
 ├── oh-package.json5
 ├── build-profile.json5
@@ -81,7 +82,7 @@ export abstract class MultiCapabilityProvider {
 
 ### 3. Consumer.ts - Consumer SDK
 
-为能力消费者应用提供发现和调用功能：
+为能力消费者应用提供注册表维护和调用功能：
 
 ```typescript
 export class AbilityLinkConsumer {
@@ -91,10 +92,10 @@ export class AbilityLinkConsumer {
   // 初始化
   async initialize(context: UIAbilityContext): Promise<InitResult>
   
-  // 发现能力
-  async discoverCapabilities(filter?: DiscoveryFilter): Promise<DiscoveredCapability[]>
+  // 获取已注册能力
+  getAllCapabilities(): RegisteredCapability[]
   
-  // 调用能力
+  // 调用能力（IPC）
   async invoke(bundle: string, capability: string, inputs: any): Promise<InvokeResult>
   
   // 事件监听
@@ -143,7 +144,7 @@ export {
 }
 ```
 
-2. 定义能力
+2. 定义能力（包含 ServiceAbility 名称）
 ```typescript
 const SMS_CAPABILITY: AbilityLinkCapability = {
   name: 'sms.send',
@@ -154,7 +155,8 @@ const SMS_CAPABILITY: AbilityLinkCapability = {
   ],
   outputs: [
     { name: 'success', type: CapabilityDataType.BOOLEAN, required: true }
-  ]
+  ],
+  serviceAbilityName: 'SmsServiceAbility'
 };
 ```
 
@@ -215,8 +217,8 @@ await consumer.initialize(this.context);
 
 3. 发现能力
 ```typescript
-const capabilities = await consumer.discoverCapabilities();
-// 自动发现所有已安装应用提供的能力
+const capabilities = consumer.getAllCapabilities();
+// 从注册表获取已注册能力
 ```
 
 4. 调用能力
@@ -232,29 +234,23 @@ const result = await consumer.invoke(
 
 ```
 ┌─────────────────────┐         ┌─────────────────────┐
-│   Consumer App      │         │   Provider App      │
-│   (WorkflowCelia)   │         │   (MockAbility)     │
+│   Provider App      │         │   WorkflowCelia     │
+│   (MockAbility)     │         │   (Consumer)        │
 │                     │         │                     │
 │  ┌───────────────┐  │         │  ┌───────────────┐  │
-│  │ Consumer.ts   │  │         │  │ Provider.ts   │  │
-│  │ - discover    │  │         │  │ - invoke()    │  │
-│  │ - invoke      │  │         │  └───────┬───────┘  │
-│  └───────┬───────┘  │         │          │          │
+│  │ Registrar IPC │  │         │  │ Registry IPC  │  │
+│  └───────┬───────┘  │         │  └───────┬───────┘  │
 │          │          │         │          │          │
-│          │          │         │          ↓          │
-│          │          │         │  ┌───────────────┐  │
-│          │          │         │  │ module.json5  │  │
-│          │          │         │  │ - capability  │  │
-│          │          │         │  │   metadata    │  │
-│          │          │         │  └───────────────┘  │
-└──────────┼──────────┘         └─────────────────────┘
-           │
-           ↓
-    ┌──────────────┐
-    │ BundleManager│
-    │ - 获取已安装应用
-    │ - 读取 metadata
-    └──────────────┘
+│          │ Register │         │          │          │
+│          │──────────>│         │          │          │
+│          │          │         │          │          │
+│  ┌───────────────┐  │         │  ┌───────────────┐  │
+│  │ Provider Stub │  │         │  │ Consumer SDK  │  │
+│  └───────┬───────┘  │         │  └───────┬───────┘  │
+│          │          │         │          │          │
+│          │  Invoke  │         │          │  Invoke  │
+│          │<─────────│         │──────────>│          │
+└─────────────────────┘         └─────────────────────┘
 ```
 
 ## 构建流程

@@ -44,6 +44,12 @@
             "resource": "$profile:backup_config"
           }
         ]
+      },
+      {
+        "name": "AbilityLinkRegistryServiceAbility",
+        "srcEntry": "./ets/services/AbilityLinkRegistryServiceAbility.ts",
+        "type": "appService",
+        "exported": true
       }
     ]
   }

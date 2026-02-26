@@ -85,7 +85,7 @@ export class AbilityLinkService {
    */
   registerCapabilities(registration: RegistrationInfo): void {
     if (!this.isInitialized) {
-      throw new Error('Service not initialized');
+      hilog.warn(DOMAIN, TAG, 'Service not initialized. Registering capabilities in cold state.');
     }
 
     this.consumer.registerCapabilities(registration);
@@ -98,7 +98,7 @@ export class AbilityLinkService {
    */
   unregisterCapabilities(bundleName: string): void {
     if (!this.isInitialized) {
-      throw new Error('Service not initialized');
+      hilog.warn(DOMAIN, TAG, 'Service not initialized. Unregistering capabilities in cold state.');
     }
 
     this.consumer.unregisterCapabilities(bundleName);

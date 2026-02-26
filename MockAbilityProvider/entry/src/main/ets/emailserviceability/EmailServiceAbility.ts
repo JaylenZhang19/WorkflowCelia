@@ -1,11 +1,13 @@
-import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
+import { AppServiceExtensionAbility, Want, common } from '@kit.AbilityKit';
+import { rpc } from '@kit.IPCKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import {
   AbilityLinkProvider,
   AbilityLinkCapability,
   AbilityCategory,
   CapabilityDataType,
-  InvokeResult
+  InvokeResult,
+  createProviderStub
 } from 'ability_link';
 
 const DOMAIN = 0x1001;
@@ -33,7 +35,8 @@ export const EMAIL_CAPABILITY: AbilityLinkCapability = {
     { name: 'messageId', type: CapabilityDataType.STRING, required: false, description: '消息 ID' }
   ],
   permissions: ['ohos.permission.INTERNET'],
-  requiresConfirmation: false
+  requiresConfirmation: false,
+  serviceAbilityName: 'EmailServiceAbility'
 };
 
 /**
@@ -45,11 +48,21 @@ export default class EmailServiceAbility extends AppServiceExtensionAbility {
   onCreate(): void {
     hilog.info(DOMAIN, TAG, 'EmailServiceAbility onCreate');
     this.provider = new EmailAbilityProvider();
+    void this.provider.initialize(this.context);
   }
 
   onDestroy(): void {
     hilog.info(DOMAIN, TAG, 'EmailServiceAbility onDestroy');
     this.provider?.dispose();
+  }
+
+  onConnect(want: Want): rpc.RemoteObject {
+    hilog.info(DOMAIN, TAG, 'EmailServiceAbility onConnect');
+    if (!this.provider) {
+      this.provider = new EmailAbilityProvider();
+      void this.provider.initialize(this.context);
+    }
+    return createProviderStub(this.provider);
   }
 
   async onStartCommand(want: Want, startId: number): Promise<void> {

@@ -14,7 +14,7 @@ export default class EntryAbility extends UIAbility {
     }
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
 
-    // Initialize AbilityLink Service for dynamic capability discovery
+    // Initialize AbilityLink Service for IPC capability registration/invocation
     try {
       const abilityLinkService = AbilityLinkService.getInstance();
       await abilityLinkService.initialize(this.context);

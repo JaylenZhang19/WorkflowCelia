@@ -1,6 +1,10 @@
 # AbilityLink SDK
 
-AbilityLink 是一个用于 HarmonyOS 应用间能力发现与调用的 SDK 框架（HAR 包）。它允许应用动态发现其他已安装应用提供的能力，并在无需修改代码的情况下调用这些能力。
+AbilityLink 是一个用于 HarmonyOS 应用间能力注册与调用的 SDK 框架（HAR 包）。采用注册制 + IPC：
+
+- Provider 应用启动时通过 IPC 向 WorkflowCelia 注册能力
+- WorkflowCelia 维护能力注册表
+- WorkflowCelia 通过 IPC 调用 Provider 的能力并获取结果
 
 ## 目录结构
 
@@ -9,7 +13,8 @@ ability_link/
 ├── src/main/ets/
 │   ├── types.ts               # 核心类型定义 (TypeScript)
 │   ├── ProviderHelper.ts      # Provider 辅助类 (TypeScript)
-│   └── Consumer.ts            # Consumer SDK (TypeScript)
+│   ├── Consumer.ts            # Consumer SDK (TypeScript)
+│   └── Ipc.ts                 # IPC 协议与工具 (TypeScript)
 ├── Index.ets                  # SDK 入口文件 (ETS - 用于 ArkUI)
 ├── oh-package.json5           # 包配置
 ├── build-profile.json5        # 构建配置
@@ -84,7 +89,7 @@ hvigorw.bat --mode module -p product=default -p module=ability_link@default asse
 
 ## 使用方式
 
-### Consumer 端（使用能力）
+### Consumer 端（WorkflowCelia 使用能力）
 
 1. **添加依赖**
 
@@ -107,10 +112,10 @@ const consumer = AbilityLinkConsumer.getInstance();
 await consumer.initialize(this.context);
 ```
 
-3. **发现能力**
+3. **获取能力**
 
 ```typescript
-const capabilities = await consumer.discoverCapabilities();
+const capabilities = consumer.getAllCapabilities();
 ```
 
 4. **调用能力**
@@ -152,10 +157,12 @@ class MyProvider extends AbilityLinkProvider {
 }
 ```
 
-3. **在 ExtensionAbility 中使用**
+3. **在 ExtensionAbility 中使用（IPC Stub）**
 
 ```typescript
 import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
+import { rpc } from '@kit.IPCKit';
+import { createProviderStub } from 'ability_link';
 
 export default class MyServiceAbility extends AppServiceExtensionAbility {
   private provider: MyProvider;
@@ -164,9 +171,8 @@ export default class MyServiceAbility extends AppServiceExtensionAbility {
     this.provider = new MyProvider();
   }
 
-  async onStartCommand(want: Want, startId: number): Promise<void> {
-    const result = await this.provider.invoke(want.parameters);
-    // 处理结果
+  onConnect(want: Want): rpc.RemoteObject {
+    return createProviderStub(this.provider);
   }
 }
 ```
@@ -191,20 +197,33 @@ export default class MyServiceAbility extends AppServiceExtensionAbility {
 }
 ```
 
+5. **应用启动时注册能力**
+
+```typescript
+import { AbilityLinkRegistrar } from 'ability_link';
+
+const registrar = new AbilityLinkRegistrar(this.context);
+await registrar.register({
+  bundleName: 'com.example.provider',
+  bundleDisplayName: 'Example Provider',
+  capabilities: [MY_CAPABILITY]
+});
+```
+
 ## API 参考
 
 ### 核心类
 
 #### AbilityLinkConsumer
 
-能力消费者 SDK，用于发现和调用能力。
+能力消费者 SDK，用于注册表维护和调用能力。
 
 **主要方法：**
 - `initialize(context)` - 初始化 SDK
-- `discoverCapabilities(filter?)` - 发现能力
+- `getAllCapabilities()` - 获取已注册能力
 - `invoke(bundle, capability, inputs)` - 调用能力
 - `getCapability(bundle, capability)` - 获取能力信息
-- `refreshCapabilities()` - 刷新能力列表
+- `registerCapabilities(registration)` - 注册能力（内部由 WorkflowCelia 接收）
 - `dispose()` - 释放资源
 
 #### AbilityLinkProvider
@@ -234,6 +253,7 @@ interface AbilityLinkCapability {
   outputs: CapabilityParameter[];  // 输出参数
   permissions: string[];  // 所需权限
   requiresConfirmation: boolean;  // 是否需要确认
+  serviceAbilityName?: string;     // Provider ServiceAbility 名称
 }
 ```
 

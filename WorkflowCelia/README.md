@@ -106,25 +106,21 @@ async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<vo
 }
 ```
 
-### 2. 发现可用能力
+### 2. 获取已注册能力
 
 ```typescript
 import { AbilityLinkService } from './services/AbilityLinkService';
 
 const service = AbilityLinkService.getInstance();
 
-// 发现所有能力
-const capabilities = await service.discoverCapabilities();
+// 获取所有已注册能力
+const capabilities = service.getAllCapabilities();
 
 // 按类别过滤
-const communicationCapabilities = await service.discoverCapabilities({
-  category: 'communication'
-});
+const communicationCapabilities = capabilities.filter(cap => cap.category === 'communication');
 
 // 按应用过滤
-const mockCapabilities = await service.discoverCapabilities({
-  bundleName: 'com.pumpkin.mockabilityprovider'
-});
+const mockCapabilities = capabilities.filter(cap => cap.bundleName === 'com.pumpkin.mockabilityprovider');
 ```
 
 ### 3. 调用能力
@@ -174,22 +170,20 @@ consumer.on(AbilityLinkEvent.INVOCATION_COMPLETE, (data) => {
 
 ### AbilityLinkService
 
-统一管理能力的发现与调用：
+统一管理能力注册表与调用：
 
 | 方法 | 功能 |
 |------|------|
 | `initialize(context)` | 初始化 SDK |
-| `discoverCapabilities(filter?)` | 发现能力 |
-| `getAllCapabilities(filter?)` | 获取已发现的能力 |
+| `getAllCapabilities()` | 获取已注册的能力 |
 | `invokeCapability(bundle, name, inputs)` | 调用能力 |
-| `refreshCapabilities()` | 刷新能力列表 |
 | `dispose()` | 释放资源 |
 
 ### AbilityLink SDK
 
 | 模块 | 功能 |
 |------|------|
-| `AbilityLinkConsumer` | 能力发现与调用核心 |
+| `AbilityLinkConsumer` | 能力注册表与调用核心 |
 | `AbilityLinkProvider` | Provider 基类 |
 | `MultiCapabilityProvider` | 多能力 Provider 基类 |
 | `AbilityCategory` | 能力类别枚举 |
@@ -246,7 +240,7 @@ const result = await engine.execute(workflow);
 ### 集成跨应用能力
 
 ```typescript
-// 创建工作流：发现能力 → 调用能力
+// 创建工作流：获取能力 → 调用能力
 const workflow = createWorkflow('Send Morning Message');
 workflow.actions = [
   {
@@ -254,10 +248,9 @@ workflow.actions = [
     execute: async (context) => {
       const service = AbilityLinkService.getInstance();
       
-      // 发现短信能力
-      const capabilities = await service.discoverCapabilities({
-        category: 'communication'
-      });
+      // 获取短信能力
+      const capabilities = service.getAllCapabilities()
+        .filter(cap => cap.category === 'communication');
       
       const smsCap = capabilities.find(c => c.capabilityName === 'sms.send');
       
@@ -279,17 +272,17 @@ workflow.actions = [
 
 ### AbilityLink Demo 页面
 
-应用内提供了演示页面用于测试能力发现与调用：
+应用内提供了演示页面用于测试能力注册与调用：
 
 1. 打开应用
 2. 导航到 AbilityLink Demo 页面
-3. 点击 "Discover Capabilities"
+3. 点击 "Refresh List"
 4. 选择发现的能力
 5. 填写参数并调用
 
 ## 集成新应用
 
-当新的应用集成 AbilityLink SDK 后，WorkflowCelia 会自动发现其能力。
+当新的应用集成 AbilityLink SDK 后，WorkflowCelia 会通过 IPC 接收其能力注册。
 
 ### Provider 应用集成步骤
 
@@ -302,14 +295,14 @@ workflow.actions = [
 
 ### 示例：添加天气应用
 
-天气应用集成后，WorkflowCelia 会自动发现 `weather.get_current` 能力：
+天气应用集成后，WorkflowCelia 会收到 `weather.get_current` 能力注册：
 
 ```typescript
 // 无需修改 WorkflowCelia 代码
 const service = AbilityLinkService.getInstance();
 
-// 天气能力会自动出现在发现列表中
-const capabilities = await service.discoverCapabilities();
+// 天气能力会出现在已注册列表中
+const capabilities = service.getAllCapabilities();
 const weatherCap = capabilities.find(c => c.capabilityName === 'weather.get_current');
 
 // 直接调用

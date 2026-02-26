@@ -8,7 +8,7 @@
  */
 
 import { hilog } from '@kit.PerformanceAnalysisKit';
-import { common, Want } from '@kit.AbilityKit';
+import { common } from '@kit.AbilityKit';
 import {
   AbilityLinkConfig,
   DEFAULT_CONFIG,
@@ -20,6 +20,12 @@ import {
   InitResult,
   RegistrationInfo
 } from './types';
+import {
+  AbilityLinkIpcClient,
+  AbilityLinkIpcCode,
+  AbilityLinkEndpoint,
+  AbilityLinkInvokeRequest
+} from './Ipc';
 
 const DOMAIN = 0x3001;
 const TAG = 'AbilityLink.Consumer';
@@ -37,6 +43,7 @@ export class AbilityLinkConsumer {
   private config: AbilityLinkConfig;
   private registeredCapabilities: Map<string, RegisteredCapability> = new Map();
   private eventListeners: Map<AbilityLinkEvent, Set<EventListener>> = new Map();
+  private ipcClient: AbilityLinkIpcClient | null = null;
 
   private constructor(config?: Partial<AbilityLinkConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -59,6 +66,7 @@ export class AbilityLinkConsumer {
   async initialize(context: common.UIAbilityContext): Promise<InitResult> {
     try {
       this.context = context;
+      this.ipcClient = new AbilityLinkIpcClient(context);
       hilog.info(DOMAIN, TAG, 'AbilityLink Consumer initializing...');
 
       hilog.info(DOMAIN, TAG, 'AbilityLink Consumer initialized successfully');
@@ -82,7 +90,7 @@ export class AbilityLinkConsumer {
    */
   registerCapabilities(registration: RegistrationInfo): void {
     if (!this.context) {
-      throw new Error('SDK not initialized. Call initialize() first.');
+      hilog.warn(DOMAIN, TAG, 'SDK not initialized. Registering capabilities before initialize().');
     }
 
     hilog.info(DOMAIN, TAG, 'Registering %{public}d capabilities from %{public}s',
@@ -162,6 +170,9 @@ export class AbilityLinkConsumer {
     if (!this.context) {
       throw new Error('SDK not initialized. Call initialize() first.');
     }
+    if (!this.ipcClient) {
+      throw new Error('IPC client not initialized.');
+    }
 
     const invokeTimeout = timeout || this.config.invocationTimeout;
     const capabilityKey = this.getCapabilityKey(bundleName, capabilityName);
@@ -188,24 +199,20 @@ export class AbilityLinkConsumer {
         };
       }
 
-      // Create Want to invoke the capability
-      const want = this.createInvokeWant(bundleName, capabilityName, inputs);
-
-      // Start the ability
-      await this.context.startAbility(want);
-
-      hilog.info(DOMAIN, TAG, 'Capability invoked successfully');
-
-      // Return success (response handling depends on provider implementation)
-      const result: InvokeResult = {
-        success: true,
-        outputs: { invoked: true },
-        metadata: {
-          bundleName,
-          capabilityName,
-          timestamp: Date.now()
-        }
+      const endpoint = this.getProviderEndpoint(bundleName, capability.capability);
+      const request: AbilityLinkInvokeRequest = {
+        capabilityName,
+        inputs
       };
+
+      const result = await this.ipcClient.request<InvokeResult>(
+        endpoint,
+        AbilityLinkIpcCode.INVOKE,
+        request,
+        invokeTimeout
+      );
+
+      hilog.info(DOMAIN, TAG, 'Capability invoked successfully via IPC');
 
       this.emit(AbilityLinkEvent.INVOCATION_COMPLETE, result);
       return result;
@@ -276,27 +283,6 @@ export class AbilityLinkConsumer {
   }
 
   /**
-   * Create Want for capability invocation
-   */
-  private createInvokeWant(
-    bundleName: string,
-    capabilityName: string,
-    inputs: Record<string, any>
-  ): Want {
-    const want: Want = {
-      bundleName,
-      abilityName: this.getAbilityNameFromCapability(capabilityName),
-      action: this.getActionFromCapability(capabilityName),
-      parameters: {
-        ...inputs,
-        capabilityName
-      }
-    };
-
-    return want;
-  }
-
-  /**
    * Get ability name from capability name
    * Convention: capability "sms.send" -> ability "SmsSendAbility"
    */
@@ -306,11 +292,14 @@ export class AbilityLinkConsumer {
   }
 
   /**
-   * Get action from capability name
-   * Convention: capability "sms.send" -> action "ability.action.sms.send"
+   * Get provider endpoint for IPC invocation
    */
-  private getActionFromCapability(capabilityName: string): string {
-    return `ability.action.${capabilityName}`;
+  private getProviderEndpoint(bundleName: string, capability: AbilityLinkCapability): AbilityLinkEndpoint {
+    const abilityName = capability.serviceAbilityName || this.getAbilityNameFromCapability(capability.name);
+    return {
+      bundleName,
+      abilityName
+    };
   }
 
   /**

@@ -11,12 +11,12 @@
 
 **问题：** HarmonyOS 出于安全考虑，**不允许应用获取其他已安装应用的信息**。`bundleManager` 没有提供获取所有已安装应用的 API。
 
-### 新架构（注册制）- ✅ 可行
+### 新架构（注册制 + IPC）- ✅ 可行
 
-现在采用**主动注册**架构：
-- Provider 应用启动时，主动向 WorkflowCelia 注册能力
+现在采用**主动注册 + IPC 调用**架构：
+- Provider 应用启动时，通过 IPC 向 WorkflowCelia 注册能力
 - WorkflowCelia 维护已注册能力列表
-- Consumer 通过 SDK 调用已注册的能力
+- WorkflowCelia 通过 IPC 调用 Provider 能力并获取结果
 
 ```
 ┌─────────────────────┐         ┌─────────────────────┐
@@ -25,7 +25,7 @@
 │                     │         │                     │
 │  ┌───────────────┐  │         │  ┌───────────────┐  │
 │  │ AbilityLink   │  │         │  │ AbilityLink   │  │
-│  │ Provider      │  │         │  │ Consumer      │  │
+│  │ Provider IPC  │  │         │  │ Registry IPC  │  │
 │  └───────┬───────┘  │         │  └───────┬───────┘  │
 │          │          │         │          │          │
 │          │ 1. 注册能力  │         │          │          │
@@ -45,10 +45,7 @@
 
 ```typescript
 // Provider 应用（如 MockAbilityProvider）启动时
-import { AbilityLinkConsumer } from 'ability_link';
-
-// 获取 Consumer 实例（WorkflowCelia）
-const consumer = AbilityLinkConsumer.getInstance();
+import { AbilityLinkRegistrar } from 'ability_link';
 
 // 准备注册信息
 const registration: RegistrationInfo = {
@@ -65,7 +62,8 @@ const registration: RegistrationInfo = {
 };
 
 // 注册能力
-consumer.registerCapabilities(registration);
+const registrar = new AbilityLinkRegistrar(this.context);
+await registrar.register(registration);
 ```
 
 ### 2. Consumer 调用流程
@@ -118,7 +116,7 @@ const want: Want = {
 await context.startAbility(want);
 ```
 
-### 方案 2：使用 RPC 远程过程调用
+### 方案 2：使用 RPC 远程过程调用（已采用）
 
 Provider 应用通过 RPC 连接到 WorkflowCelia：
 

@@ -27,6 +27,8 @@ export interface AbilityLinkCapability {
   permissions: string[];
   /** Whether requires user confirmation */
   requiresConfirmation: boolean;
+  /** Service extension ability name for IPC invocation */
+  serviceAbilityName?: string;
   /** Custom metadata */
   metadata?: Record<string, any>;
 }

@@ -24,16 +24,16 @@
 
 ## 架构设计
 
-### 注册制架构
+### 注册制架构 + IPC
 
 ```
 ┌─────────────────────┐         ┌─────────────────────┐
 │   Provider App      │         │   WorkflowCelia     │
 │   (MockAbility)     │         │   (Consumer)        │
 │                     │         │                     │
-│  1. 启动时注册能力   │────────>│  2. 维护注册表      │
+│  1. IPC 注册能力     │────────>│  2. 维护注册表      │
 │                     │         │                     │
-│  4. 执行能力         │<────────│  3. 调用能力        │
+│  4. IPC 执行能力     │<────────│  3. IPC 调用能力    │
 └─────────────────────┘         └─────────────────────┘
 ```
 
@@ -50,7 +50,8 @@ WorkflowCelia/ability_link/
 ├── src/main/ets/
 │   ├── types.ts               ← TypeScript: 类型定义
 │   ├── ProviderHelper.ts      ← TypeScript: Provider 基类
-│   └── Consumer.ts            ← TypeScript: Consumer SDK
+│   ├── Consumer.ts            ← TypeScript: Consumer SDK
+│   └── Ipc.ts                 ← TypeScript: IPC 协议与工具
 ├── Index.ets                  ← ETS: 模块入口
 └── oh-package.json5
 ```
@@ -59,7 +60,8 @@ WorkflowCelia/ability_link/
 ```
 WorkflowCelia/entry/src/main/ets/
 ├── services/
-│   └── AbilityLinkService.ets ← 服务封装 (ETS)
+│   ├── AbilityLinkService.ets ← 服务封装 (ETS)
+│   └── AbilityLinkRegistryServiceAbility.ts ← 注册服务 (TS)
 ├── pages/
 │   └── AbilityLinkDemo.ets    ← 演示页面
 └── entryability/
@@ -74,14 +76,14 @@ MockAbilityProvider/entry/src/main/ets/
 ├── emailserviceability/
 │   └── EmailServiceAbility.ets ← 邮件能力 (ETS)
 └── entryability/
-    └── EntryAbility.ets
+    └── EntryAbility.ets        ← IPC 注册入口
 ```
 
 ## 代码规范
 
 ### 文件扩展名规则
-- **UI 代码** → `.ets` (ArkTS) - 用于 ArkUI 组件、页面、Service
-- **后端逻辑** → `.ts` (TypeScript) - 仅用于 HAR 包中的纯逻辑代码
+- **UI 代码** → `.ets` (ArkTS) - 用于 ArkUI 组件、页面
+- **后端逻辑** → `.ts` (TypeScript) - 用于 Service/SDK/业务逻辑
 
 ### 类型规则
 - 禁止使用 `any`，使用 `Object` 或具体类型
@@ -92,24 +94,16 @@ MockAbilityProvider/entry/src/main/ets/
 
 ### Provider 注册能力
 
-Provider 应用（如 MockAbilityProvider）在启动时不需要自动注册，而是通过 WorkflowCelia 的演示页面手动注册（用于测试）：
+Provider 应用（如 MockAbilityProvider）在启动时通过 IPC 自动注册能力：
 
 ```typescript
-// WorkflowCelia 的 AbilityLinkDemo.ets 中
-const registration: RegistrationInfo = {
+// MockAbilityProvider 的 EntryAbility.ets 中
+const registrar = new AbilityLinkRegistrar(this.context);
+await registrar.register({
   bundleName: 'com.pumpkin.mockabilityprovider',
   bundleDisplayName: 'MockAbility Provider',
-  capabilities: [
-    {
-      name: 'sms.send',
-      displayName: '发送短信',
-      category: AbilityCategory.COMMUNICATION,
-      // ... 其他定义
-    }
-  ]
-};
-
-abilityLinkService.registerCapabilities(registration);
+  capabilities: [SMS_CAPABILITY, EMAIL_CAPABILITY]
+});
 ```
 
 ### Consumer 调用能力
@@ -137,12 +131,6 @@ if (result.success) {
 ```typescript
 // 初始化
 await consumer.initialize(context);
-
-// 注册能力
-consumer.registerCapabilities(registration);
-
-// 注销能力
-consumer.unregisterCapabilities(bundleName);
 
 // 获取所有能力
 const capabilities = consumer.getAllCapabilities();

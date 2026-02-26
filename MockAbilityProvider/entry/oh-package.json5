@@ -6,6 +6,6 @@
   "author": "WorkflowCelia Team",
   "license": "Apache-2.0",
   "dependencies": {
-    "ability_link": "file:../WorkflowCelia/ability_link"
+    "ability_link": "file:../ability_link.har"
   }
 }

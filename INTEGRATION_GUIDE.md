@@ -112,6 +112,7 @@ export const CREATE_EVENT_CAPABILITY: AbilityLinkCapability = {
   ],
   permissions: ['ohos.permission.WRITE_CALENDAR'],
   requiresConfirmation: true,
+  serviceAbilityName: 'CalendarServiceAbility',
   metadata: {
     // 自定义元数据
     supportsRecurring: true,
@@ -195,39 +196,35 @@ export class CalendarAbilityProvider extends AbilityLinkProvider {
 
 ## 步骤 4: 创建 ExtensionAbility
 
-创建用于暴露能力的 ExtensionAbility：
+创建用于暴露能力的 ExtensionAbility（IPC Stub）：
 
 ```typescript
-// 例如：entry/src/main/ets/calendarability/CalendarAbility.ts
+// 例如：entry/src/main/ets/calendarability/CalendarServiceAbility.ts
 import { AppServiceExtensionAbility, Want } from '@kit.AbilityKit';
+import { rpc } from '@kit.IPCKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CalendarAbilityProvider } from '../providers/CalendarAbilityProvider';
+import { createProviderStub } from 'ability_link';
 
 const DOMAIN = 0x4000;
-const TAG = 'CalendarAbility';
+const TAG = 'CalendarServiceAbility';
 
-export default class CalendarAbility extends AppServiceExtensionAbility {
+export default class CalendarServiceAbility extends AppServiceExtensionAbility {
   private provider: CalendarAbilityProvider;
 
   onCreate(): void {
-    hilog.info(DOMAIN, TAG, 'CalendarAbility onCreate');
+    hilog.info(DOMAIN, TAG, 'CalendarServiceAbility onCreate');
     this.provider = new CalendarAbilityProvider();
   }
 
   onDestroy(): void {
-    hilog.info(DOMAIN, TAG, 'CalendarAbility onDestroy');
+    hilog.info(DOMAIN, TAG, 'CalendarServiceAbility onDestroy');
     this.provider.dispose();
   }
 
-  async onStartCommand(want: Want, startId: number): Promise<void> {
-    hilog.info(DOMAIN, TAG, 'onStartCommand: %{public}s', JSON.stringify(want));
-
-    try {
-      const result = await this.provider.invoke(want.parameters);
-      hilog.info(DOMAIN, TAG, 'Result: %{public}s', JSON.stringify(result));
-    } catch (err) {
-      hilog.error(DOMAIN, TAG, 'Error: %{public}s', JSON.stringify(err));
-    }
+  onConnect(want: Want): rpc.RemoteObject {
+    hilog.info(DOMAIN, TAG, 'onConnect: %{public}s', JSON.stringify(want));
+    return createProviderStub(this.provider);
   }
 }
 ```
@@ -251,8 +248,8 @@ export default class CalendarAbility extends AppServiceExtensionAbility {
     ],
     "extensionAbilities": [
       {
-        "name": "CalendarAbility",
-        "srcEntry": "./ets/calendarability/CalendarAbility.ts",
+        "name": "CalendarServiceAbility",
+        "srcEntry": "./ets/calendarability/CalendarServiceAbility.ts",
         "type": "appService",
         "exported": true,
         "permissions": ["ohos.permission.WRITE_CALENDAR"],
@@ -273,7 +270,23 @@ export default class CalendarAbility extends AppServiceExtensionAbility {
 }
 ```
 
-## 步骤 6: 测试
+## 步骤 6: 应用启动时注册能力
+
+在 `EntryAbility` 的 `onCreate` 中注册能力：
+
+```typescript
+import { AbilityLinkRegistrar } from 'ability_link';
+import { CREATE_EVENT_CAPABILITY } from '../capabilities/CalendarCapability';
+
+const registrar = new AbilityLinkRegistrar(this.context);
+await registrar.register({
+  bundleName: this.context.abilityInfo?.bundleName || 'com.example.calendar',
+  bundleDisplayName: this.context.abilityInfo?.label || 'Calendar App',
+  capabilities: [CREATE_EVENT_CAPABILITY]
+});
+```
+
+## 步骤 7: 测试
 
 ### 单元测试 Provider
 
@@ -317,8 +330,8 @@ describe('CalendarAbilityProvider', () => {
 1. 安装 MockAbilityProvider 和您的应用到设备/模拟器
 2. 打开 WorkflowCelia 应用
 3. 进入 AbilityLink Demo 页面
-4. 点击 "Discover Capabilities"
-5. 验证您的能力出现在列表中
+4. 点击 "Refresh List"
+5. 验证您的能力出现在列表中（来自 IPC 注册）
 6. 选择您的能力并测试调用
 
 ## 多能力应用

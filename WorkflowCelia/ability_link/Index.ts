@@ -1,6 +1,6 @@
 /**
  * AbilityLink SDK
- * Cross-application capability discovery and invocation framework
+ * Cross-application capability registration and IPC invocation framework
  *
  * @module ability_link
  */
@@ -28,8 +28,26 @@ export {
   MultiCapabilityProvider,
   ProviderInfo,
   AbilityLinkMetadata,
-  createAbilityLinkMetadata
+  createAbilityLinkMetadata,
+  createProviderStub
 } from './src/main/ets/ProviderHelper';
 
 // Consumer
 export { AbilityLinkConsumer } from './src/main/ets/Consumer';
+
+// IPC helpers
+export {
+  AbilityLinkIpcCode,
+  AbilityLinkEndpoint,
+  DEFAULT_WORKFLOW_ENDPOINT,
+  AbilityLinkRegistrationRequest,
+  AbilityLinkUnregisterRequest,
+  AbilityLinkHeartbeatRequest,
+  AbilityLinkInvokeRequest,
+  AbilityLinkBasicResponse,
+  AbilityLinkRegistryHandler,
+  AbilityLinkRegistryStub,
+  AbilityLinkProviderStub,
+  AbilityLinkIpcClient,
+  AbilityLinkRegistrar
+} from './src/main/ets/Ipc';

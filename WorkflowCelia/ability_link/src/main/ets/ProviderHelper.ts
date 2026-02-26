@@ -10,6 +10,7 @@ import {
   InvokeResult,
   RegistrationInfo
 } from './types';
+import { AbilityLinkProviderStub, AbilityLinkProviderLike } from './Ipc';
 
 const DOMAIN = 0x3000;
 const TAG = 'AbilityLink.Provider';
@@ -19,7 +20,7 @@ const TAG = 'AbilityLink.Provider';
  * Extend this class in your AppServiceExtensionAbility to expose capabilities
  */
 export abstract class AbilityLinkProvider {
-  protected context: common.UIAbilityContext | null = null;
+  protected context: common.Context | null = null;
   protected isInitialized: boolean = false;
 
   /**
@@ -32,7 +33,7 @@ export abstract class AbilityLinkProvider {
    * Initialize the provider
    * Override to add custom initialization logic
    */
-  async initialize(context: common.UIAbilityContext): Promise<void> {
+  async initialize(context: common.Context): Promise<void> {
     this.context = context;
     this.isInitialized = true;
     hilog.info(DOMAIN, TAG, 'Provider initialized: %{public}s', this.getCapability().name);
@@ -245,4 +246,31 @@ export abstract class MultiCapabilityProvider {
     this.isInitialized = false;
     hilog.info(DOMAIN, TAG, 'Multi-capability provider disposed');
   }
+}
+
+/**
+ * Create IPC stub for provider
+ */
+export function createProviderStub(provider: AbilityLinkProvider | MultiCapabilityProvider): AbilityLinkProviderStub {
+  const handler: AbilityLinkProviderLike = {
+    invoke: async (capabilityName: string, inputs: Record<string, any>): Promise<InvokeResult> => {
+      if (provider instanceof MultiCapabilityProvider) {
+        return provider.invokeCapability(capabilityName, inputs);
+      }
+
+      const singleProvider = provider as AbilityLinkProvider;
+      const definedName = singleProvider.getCapability().name;
+      if (capabilityName && definedName !== capabilityName) {
+        return {
+          success: false,
+          error: `Capability not found: ${capabilityName}`,
+          errorCode: 'CAPABILITY_NOT_FOUND'
+        };
+      }
+
+      return singleProvider.invoke(inputs);
+    }
+  };
+
+  return new AbilityLinkProviderStub(handler);
 }

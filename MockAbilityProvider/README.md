@@ -315,7 +315,7 @@ export default class SmsServiceAbility extends AppServiceExtensionAbility {
 
 ### 被 WorkflowCelia 调用
 
-安装 MockAbilityProvider 后，WorkflowCelia 会自动发现其能力：
+安装 MockAbilityProvider 后，WorkflowCelia 会通过 IPC 接收其能力注册：
 
 ```typescript
 // WorkflowCelia 中的代码
@@ -323,10 +323,9 @@ import { AbilityLinkService } from './services/AbilityLinkService';
 
 const service = AbilityLinkService.getInstance();
 
-// 发现能力
-const capabilities = await service.discoverCapabilities({
-  bundleName: 'com.pumpkin.mockabilityprovider'
-});
+// 获取已注册能力
+const capabilities = service.getAllCapabilities()
+  .filter(cap => cap.bundleName === 'com.pumpkin.mockabilityprovider');
 
 // capabilities 将包含：
 // - sms.send
@@ -469,7 +468,7 @@ export default class NewServiceAbility extends AppServiceExtensionAbility {
 1. 同时安装 MockAbilityProvider 和 WorkflowCelia
 2. 打开 WorkflowCelia
 3. 进入 AbilityLink Demo 页面
-4. 点击 "Discover Capabilities"
+4. 点击 "Refresh List"
 5. 验证 MockAbilityProvider 的能力出现在列表中
 6. 选择能力并测试调用
 
