@@ -1,7 +1,19 @@
 {
   "app": {
     "signingConfigs": [
-
+      {
+        "name": "default",
+        "type": "HarmonyOS",
+        "material": {
+          "certpath": "/Users/jinglun/.ohos/config/default_WorkflowCelia_vTcIZOLaoNzhRMv9AYFn31yHHcmWK0Eb-JedZXmAYvs=.cer",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001B75C2C2DBCD7EBA0EFFC7E9462B7D53FA141644470EBFEC05995B200D61A55B8091456792A5AA0E",
+          "profile": "/Users/jinglun/.ohos/config/default_WorkflowCelia_vTcIZOLaoNzhRMv9AYFn31yHHcmWK0Eb-JedZXmAYvs=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "/Users/jinglun/.ohos/config/default_WorkflowCelia_vTcIZOLaoNzhRMv9AYFn31yHHcmWK0Eb-JedZXmAYvs=.p12",
+          "storePassword": "0000001BDBB318780D13CA32561983B219A6781068B826FDFE7A884501E61C115D1CF7DBBCEEDCD66D5CC0"
+        }
+      }
     ],
     "products": [
       {

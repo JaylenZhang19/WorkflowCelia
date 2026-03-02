@@ -11,6 +11,14 @@
     {
       "name": "EntryAbility_label",
       "value": "Workflow Celia"
+    },
+    {
+      "name": "read_whole_calendar_reason",
+      "value": "用于日历读取申请"
+    },
+    {
+      "name": "write_whole_calendar_reason",
+      "value": "用于日历写入申请"
     }
   ]
 }

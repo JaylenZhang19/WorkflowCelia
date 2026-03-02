@@ -13,7 +13,7 @@
     "abilities": [
       {
         "name": "EntryAbility",
-        "srcEntry": "./ets/entryability/EntryAbility.ets",
+        "srcEntry": "./ets/entryability/EntryAbility.ts",
         "description": "$string:EntryAbility_desc",
         "icon": "$media:layered_image",
         "label": "$string:EntryAbility_label",
@@ -50,6 +50,24 @@
         "srcEntry": "./ets/services/AbilityLinkRegistryServiceAbility.ts",
         "type": "appService",
         "exported": true
+      }
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.READ_CALENDAR",
+        "reason": "$string:read_whole_calendar_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
+      },
+      {
+        "name": 'ohos.permission.WRITE_CALENDAR',
+        "reason": "$string:write_whole_calendar_reason",
+        "usedScene": {
+          "abilities": ["EntryAbility"],
+          "when": "always"
+        }
       }
     ]
   }
