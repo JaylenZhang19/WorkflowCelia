@@ -7,6 +7,7 @@ import { CameraHandler } from "./localprovider/abilityhandler/CameraHandler";
 import { CallHandler } from "./localprovider/abilityhandler/CallHandler";
 import { ContactHandler } from "./localprovider/abilityhandler/ContactHandler";
 import { FileHandler } from "./localprovider/abilityhandler/FileHandler";
+import { MailHandler } from "./localprovider/abilityhandler/MailHandler";
 import { MOCK_PROVIDER_TOOLS } from "./localprovider/LocalCapabilityConfig";
 
 const TAG: string = 'LocalAbilityManager';
@@ -20,6 +21,7 @@ export class LocalAbilityManager extends AbsAbilityManager {
     ['Call', new CallHandler()],
     ['Contact', new ContactHandler()],
     ['File', new FileHandler()],
+    ['Mail', new MailHandler()],
   ]);
 
   private constructor() {

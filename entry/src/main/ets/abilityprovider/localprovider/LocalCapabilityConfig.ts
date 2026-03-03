@@ -347,6 +347,29 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
     ],
     outputs: [],
     tags: ["file", "move"]
+  },
+  {
+    id: "mail.send",
+    namespace: "Mail",
+    name: "send",
+    displayName: "发送邮件",
+    description: "拉起系统邮件能力并填充收件人、主题、正文和附件",
+    version: "1.0.0",
+    category: AbilityCategory.COMMUNICATION,
+    inputs: [
+      { name: "email", type: CapabilityDataType.ARRAY, required: false, description: "收件人邮箱数组" },
+      { name: "cc", type: CapabilityDataType.ARRAY, required: false, description: "抄送人邮箱数组" },
+      { name: "bcc", type: CapabilityDataType.ARRAY, required: false, description: "密送人邮箱数组" },
+      { name: "subject", type: CapabilityDataType.STRING, required: false, description: "邮件主题" },
+      { name: "body", type: CapabilityDataType.STRING, required: false, description: "邮件正文" },
+      { name: "streamUris", type: CapabilityDataType.ARRAY, required: false, description: "附件 URI 列表" },
+      { name: "uriPermissionFlag", type: CapabilityDataType.NUMBER, required: false, description: "附件 URI 权限标志" },
+      { name: "sceneType", type: CapabilityDataType.NUMBER, required: false, description: "场景类型，默认 1" }
+    ],
+    outputs: [
+      { name: "started", type: CapabilityDataType.BOOLEAN, required: true, description: "是否成功拉起邮件能力" }
+    ],
+    tags: ["mail", "communication", "share"]
   }
 ];
 
