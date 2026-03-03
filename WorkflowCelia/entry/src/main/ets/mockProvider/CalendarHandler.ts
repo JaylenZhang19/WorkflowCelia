@@ -22,8 +22,13 @@ export class CalendarHandler extends AbilityHandler {
 
   private currentCalender: calendarManager.Calendar;
 
+  private isInit: boolean = false;
+
 
   public async init(): Promise<void> {
+    if (this.isInit) {
+      return;
+    }
     this.NAME_MAP = new Map([
       ['addEvent', this.addEvent],
       ['deleteEvent', this.deleteEvent],
@@ -35,10 +40,10 @@ export class CalendarHandler extends AbilityHandler {
     ]);
     logger.info(TAG, `init permissionResult: ${JSON.stringify(permissionResult)}`);
     this.calendarMgr = calendarManager.getCalendarManager(globalContext);
-    logger.info(TAG, 'create calendarMgr')
     this.currentCalender = await this.calendarMgr.createCalendar(this.calendarAccount);
-    logger.info(TAG, `创建完成currentCalender: ${JSON.stringify(this.currentCalender)}`)
-
+    await this.currentCalender.setConfig(this.config);
+    this.isInit = true;
+    logger.info(TAG, 'init finish');
   }
 
   async requestPermission(permissions: Array<Permissions>): Promise<PermissionRequestResult> {
@@ -53,7 +58,7 @@ export class CalendarHandler extends AbilityHandler {
     return result;
   }
 
-  public async handleRequest(name: string, args: Record<string, object>): Promise<InvokeResult> {
+  public async handleRequest(name: string, args: Record<string, any>): Promise<InvokeResult> {
     if (!this.NAME_MAP.has(name)) {
       return {
         success: false,
@@ -65,42 +70,39 @@ export class CalendarHandler extends AbilityHandler {
     return this.NAME_MAP.get(name)(args);
   }
 
-  private async addEvent(args: Record<string, any>): Promise<InvokeResult> {
-    logger.info(TAG, `addEvent args1: }`)
-    // const event: calendarManager.Event = JSON.parse(JSON.stringify(args))
-    try {
-      let currentCalender = await this.calendarMgr.getCalendar();
-      logger.info(TAG, '开始添加')
-      if (!currentCalender || currentCalender === null) {
-        logger.error(TAG, 'Failed to create calendar. tripCalendar is null.');
-        return;
+  private getExample(): calendarManager.Event {
+    const startTime = new Date().getTime();
+    const endTime = new Date().getTime();
+    let event: calendarManager.Event = {
+      type: calendarManager.EventType.NORMAL,
+      // 日程标题
+      title: '测试',
+      // 开始时间
+      startTime: startTime,
+      // 结束时间
+      endTime: endTime,
+      // 是否全天日程
+      isAllDay:false,
+      // 提醒时间
+      reminderTime:[120, 240],
+      // 备注
+      description: '检票口：南二楼1口或北广场B2候车室 \n座位号：02车04二等座',
+      // 一键服务
+      service: {
+        // 服务类型
+        type: calendarManager.ServiceType.TRIP,
+        // 服务的uri，格式为DeepLink类型。请根据“一键服务”指导文档配置。
+        uri: 'demo://mobile/player?params='
       }
-      await this.currentCalender.setConfig(this.config);
-      const startTime = new Date().getTime();
-      const endTime = new Date().getTime();
-      const id: number = await this.currentCalender.addEvent({
-        type: calendarManager.EventType.NORMAL,
-        // 日程标题
-        title: '测试',
-        // 开始时间
-        startTime: startTime,
-        // 结束时间
-        endTime: endTime,
-        // 是否全天日程
-        isAllDay:false,
-        // 提醒时间
-        reminderTime:[120, 240],
-        // 备注
-        description: '检票口：南二楼1口或北广场B2候车室 \n座位号：02车04二等座',
-        // 一键服务
-        service: {
-          // 服务类型
-          type: calendarManager.ServiceType.TRIP,
-          // 服务的uri，格式为DeepLink类型。请根据“一键服务”指导文档配置。
-          uri: 'demo://mobile/player?params='
-        }
+    }
+    return event;
+  }
 
-      });
+  private addEvent = async (args: Record<string, any>): Promise<InvokeResult> => {
+    logger.info(TAG, `addEvent args: ${JSON.stringify(args)}`)
+    try {
+      const id: number = await this.currentCalender.addEvent(args as calendarManager.Event);
+      logger.info(TAG, `addEvent id: ${id}`)
       return {
         success: true,
         outputs: {
@@ -118,7 +120,7 @@ export class CalendarHandler extends AbilityHandler {
     }
   }
 
-  private async deleteEvent(args: Record<string, any>): Promise<InvokeResult> {
+  private deleteEvent = async (args: Record<string, any>): Promise<InvokeResult> => {
     try {
       await this.currentCalender.deleteEvent(args.id);
       return {
@@ -138,7 +140,7 @@ export class CalendarHandler extends AbilityHandler {
     }
   }
 
-  private async getEvents(): Promise<InvokeResult> {
+  private getEvents = async (): Promise<InvokeResult> => {
     try {
       const events = await this.currentCalender.getEvents();
       return {

@@ -17,14 +17,16 @@ export class AbilityProviderManager {
     return AbilityProviderManager.INSTANCE;
   }
 
-  public handleQueryMessage(queryMessage: QueryMessage): Promise<InvokeResult> {
+  public async handleQueryMessage(queryMessage: QueryMessage): Promise<InvokeResult> {
     const namespace: string = queryMessage.header.namespace;
     const name: string = queryMessage.header.name;
     logger.info(TAG, `handleQueryMessage, namespace: ${namespace}, name: ${name}`);
     if (!AbilityProviderManager.ABILITY_MAP.has(queryMessage.header.namespace)) {
       logger.error(TAG, `handleQueryMessage, invalid namespace: ${queryMessage.header.namespace}`);
     }
-    return AbilityProviderManager.ABILITY_MAP.get(namespace)?.handleRequest(name, queryMessage.payload.args);
+    const handler: AbilityHandler = AbilityProviderManager.ABILITY_MAP.get(namespace);
+    await handler.init();
+    return handler.handleRequest(name, queryMessage.payload.args);
   }
 
   private constructor() {

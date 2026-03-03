@@ -11,5 +11,5 @@ export interface Header {
 }
 
 export interface Payload {
-  args: Record<string, object>;
+  args: Record<string, any>;
 }
