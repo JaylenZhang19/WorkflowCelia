@@ -1,9 +1,0 @@
-{
-  "name": "ability_link",
-  "version": "1.0.0",
-  "description": "AbilityLink SDK - Cross-application capability registration and IPC invocation framework",
-  "main": "Index.ts",
-  "author": "WorkflowCelia Team",
-  "license": "Apache-2.0",
-  "dependencies": {}
-}

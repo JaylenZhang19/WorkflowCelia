@@ -3,6 +3,8 @@ import { window } from '@kit.ArkUI';
 import { AbilityLinkService } from '../services/AbilityLinkService';
 import { logger } from '../utils/Logger';
 import { common } from '@kit.AbilityKit';
+import { QueryMessage } from '../abilityprovider/AbilityTypes';
+import { GeneralAbilityManager } from '../abilityprovider/GeneralAbilityManager';
 
 const TAG = 'EntryAbility';
 
@@ -28,6 +30,44 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       logger.error(TAG, `Failed to initialize AbilityLink Service. Cause: ${JSON.stringify(err)}`);
     }
+    this.test();
+  }
+
+  private test() {
+    const startTime = new Date().getTime();
+    const endTime = new Date().getTime();
+    let event: object = {
+      type: 0,
+      // 日程标题
+      title: '测试',
+      // 开始时间
+      startTime: startTime,
+      // 结束时间
+      endTime: endTime,
+      // 是否全天日程
+      isAllDay:false,
+      // 提醒时间
+      reminderTime:[120, 240],
+      // 备注
+      description: '检票口：南二楼1口或北广场B2候车室 \n座位号：02车04二等座',
+      // 一键服务
+      service: {
+        // 服务类型
+        type: 'Trip',
+        // 服务的uri，格式为DeepLink类型。请根据“一键服务”指导文档配置。
+        uri: 'demo://mobile/player?params='
+      }
+    }
+    const query: QueryMessage = {
+      header: {
+        namespace: 'Calendar',
+        name: 'addEvent'
+      },
+      payload: {
+        args: event
+      }
+    }
+    GeneralAbilityManager.getInstance().handleQueryMessage(query);
   }
 
   onDestroy(): void {
