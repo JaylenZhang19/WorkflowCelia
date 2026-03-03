@@ -48,7 +48,7 @@ export class CalendarHandler extends AbilityHandler {
 
   async requestPermission(permissions: Array<Permissions>): Promise<PermissionRequestResult> {
     let atManager: abilityAccessCtrl.AtManager = abilityAccessCtrl.createAtManager();
-    let result: PermissionRequestResult;
+    let result: PermissionRequestResult = {} as PermissionRequestResult;
     try {
       result = await atManager.requestPermissionsFromUser(globalContext, permissions);
       logger.info(TAG, `requestPermission result: ${JSON.stringify(result)}`);
@@ -67,7 +67,8 @@ export class CalendarHandler extends AbilityHandler {
         }
       }
     }
-    return this.NAME_MAP.get(name)(args);
+    const method = this.NAME_MAP.get(name);
+    return method(args);
   }
 
   private getExample(): calendarManager.Event {
@@ -146,7 +147,7 @@ export class CalendarHandler extends AbilityHandler {
       return {
         success: true,
         outputs: {
-          events: JSON.stringify(events)
+          events: events
         }
       }
     } catch (error) {

@@ -23,10 +23,31 @@ export class AbilityProviderManager {
     logger.info(TAG, `handleQueryMessage, namespace: ${namespace}, name: ${name}`);
     if (!AbilityProviderManager.ABILITY_MAP.has(queryMessage.header.namespace)) {
       logger.error(TAG, `handleQueryMessage, invalid namespace: ${queryMessage.header.namespace}`);
+      return {
+        success: false,
+        errorCode: 'NAMESPACE_NOT_FOUND',
+        error: `invalid namespace: ${queryMessage.header.namespace}`
+      };
     }
-    const handler: AbilityHandler = AbilityProviderManager.ABILITY_MAP.get(namespace);
-    await handler.init();
-    return handler.handleRequest(name, queryMessage.payload.args);
+    const handler: AbilityHandler | undefined = AbilityProviderManager.ABILITY_MAP.get(namespace);
+    if (!handler) {
+      return {
+        success: false,
+        errorCode: 'HANDLER_NOT_FOUND',
+        error: `handler not found for namespace: ${namespace}`
+      };
+    }
+    try {
+      await handler.init();
+      return handler.handleRequest(name, queryMessage.payload.args);
+    } catch (error) {
+      logger.error(TAG, `handleQueryMessage error: ${JSON.stringify(error)}`);
+      return {
+        success: false,
+        errorCode: 'INVOKE_FAILED',
+        error: JSON.stringify(error)
+      };
+    }
   }
 
   private constructor() {
