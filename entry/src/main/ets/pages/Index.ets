@@ -1,0 +1,24 @@
+/**
+ * Workflow App Entry Point
+ */
+import router from '@ohos.router';
+
+@Entry
+@Component
+struct Index {
+  aboutToAppear() {
+
+  }
+
+  build() {
+    Column() {
+      Text('Loading Workflow...')
+        .fontSize(18)
+        .fontColor('#1C1C1E')
+    }
+    .width('100%')
+    .height('100%')
+    .justifyContent(FlexAlign.Center)
+    .backgroundColor('#F2F2F7')
+  }
+}
