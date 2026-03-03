@@ -3,6 +3,7 @@ import { InvokeResult, QueryMessage } from "./AbilityTypes";
 import { AbsAbilityManager } from "./AbsAbilityManager";
 import { AbsAbilityHandler } from "./localprovider/abilityhandler/AbsAbilityHandler";
 import { CalendarHandler } from "./localprovider/abilityhandler/CalendarHandler";
+import { CameraHandler } from "./localprovider/abilityhandler/CameraHandler";
 import { CallHandler } from "./localprovider/abilityhandler/CallHandler";
 import { ContactHandler } from "./localprovider/abilityhandler/ContactHandler";
 import { FileHandler } from "./localprovider/abilityhandler/FileHandler";
@@ -15,6 +16,7 @@ export class LocalAbilityManager extends AbsAbilityManager {
 
   private static readonly HANDLER_MAP: Map<string, AbsAbilityHandler> = new Map<string, AbsAbilityHandler>([
     ['Calendar', new CalendarHandler()],
+    ['Camera', new CameraHandler()],
     ['Call', new CallHandler()],
     ['Contact', new ContactHandler()],
     ['File', new FileHandler()],

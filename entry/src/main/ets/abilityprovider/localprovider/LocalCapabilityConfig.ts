@@ -54,6 +54,25 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
     tags: ["calendar", "query", "event"]
   },
   {
+    id: "camera.pick",
+    namespace: "Camera",
+    name: "pick",
+    displayName: "拉起相机拍摄",
+    description: "拉起系统相机选择器，支持拍照或录像并返回 URI",
+    version: "1.0.0",
+    category: AbilityCategory.MEDIA,
+    inputs: [
+      { name: "type", type: CapabilityDataType.STRING, required: false, description: "PHOTO | VIDEO | BOTH，默认 BOTH" },
+      { name: "cameraPosition", type: CapabilityDataType.STRING, required: false, description: "FRONT | BACK，默认 BACK" }
+    ],
+    outputs: [
+      { name: "resultCode", type: CapabilityDataType.NUMBER, required: true, description: "选择器结果码，0 为成功" },
+      { name: "resultUri", type: CapabilityDataType.STRING, required: false, description: "拍摄结果 URI" },
+      { name: "mediaType", type: CapabilityDataType.NUMBER, required: false, description: "媒体类型" }
+    ],
+    tags: ["camera", "picker", "photo", "video"]
+  },
+  {
     id: "call.makeCall",
     namespace: "Call",
     name: "makeCall",
