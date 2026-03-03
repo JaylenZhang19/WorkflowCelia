@@ -5,6 +5,7 @@ import { AbsAbilityHandler } from "./localprovider/abilityhandler/AbsAbilityHand
 import { CalendarHandler } from "./localprovider/abilityhandler/CalendarHandler";
 import { CallHandler } from "./localprovider/abilityhandler/CallHandler";
 import { ContactHandler } from "./localprovider/abilityhandler/ContactHandler";
+import { FileHandler } from "./localprovider/abilityhandler/FileHandler";
 import { MOCK_PROVIDER_TOOLS } from "./localprovider/LocalCapabilityConfig";
 
 const TAG: string = 'LocalAbilityManager';
@@ -16,6 +17,7 @@ export class LocalAbilityManager extends AbsAbilityManager {
     ['Calendar', new CalendarHandler()],
     ['Call', new CallHandler()],
     ['Contact', new ContactHandler()],
+    ['File', new FileHandler()],
   ]);
 
   private constructor() {

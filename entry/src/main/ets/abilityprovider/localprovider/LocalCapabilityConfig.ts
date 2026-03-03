@@ -115,6 +115,219 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
       { name: "contact", type: CapabilityDataType.OBJECT, required: true, description: "联系人信息" }
     ],
     tags: ["contact", "query", "read"]
+  },
+  {
+    id: "file.access",
+    namespace: "File",
+    name: "access",
+    displayName: "检查文件可访问性",
+    description: "检查文件或目录是否存在，或校验权限",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "应用沙箱路径" },
+      { name: "mode", type: CapabilityDataType.NUMBER, required: false, description: "AccessModeType" }
+    ],
+    outputs: [
+      { name: "exists", type: CapabilityDataType.BOOLEAN, required: true, description: "是否存在/可访问" }
+    ],
+    tags: ["file", "access"]
+  },
+  {
+    id: "file.open",
+    namespace: "File",
+    name: "open",
+    displayName: "打开文件",
+    description: "打开文件或目录并返回文件描述符",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "应用沙箱路径" },
+      { name: "mode", type: CapabilityDataType.NUMBER, required: false, description: "OpenMode 按位组合值" }
+    ],
+    outputs: [
+      { name: "fd", type: CapabilityDataType.NUMBER, required: true, description: "文件描述符" }
+    ],
+    tags: ["file", "open"]
+  },
+  {
+    id: "file.close",
+    namespace: "File",
+    name: "close",
+    displayName: "关闭文件",
+    description: "关闭文件描述符或文件对象",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "fd", type: CapabilityDataType.NUMBER, required: false, description: "文件描述符" },
+      { name: "file", type: CapabilityDataType.OBJECT, required: false, description: "文件对象" }
+    ],
+    outputs: [],
+    tags: ["file", "close"]
+  },
+  {
+    id: "file.read",
+    namespace: "File",
+    name: "read",
+    displayName: "读取文件",
+    description: "从文件描述符读取内容",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "fd", type: CapabilityDataType.NUMBER, required: true, description: "文件描述符" },
+      { name: "offset", type: CapabilityDataType.NUMBER, required: false, description: "读取偏移量" },
+      { name: "length", type: CapabilityDataType.NUMBER, required: false, description: "读取长度" }
+    ],
+    outputs: [
+      { name: "readLen", type: CapabilityDataType.NUMBER, required: true, description: "读取字节数" },
+      { name: "content", type: CapabilityDataType.STRING, required: true, description: "UTF-8 解码内容" }
+    ],
+    tags: ["file", "read"]
+  },
+  {
+    id: "file.write",
+    namespace: "File",
+    name: "write",
+    displayName: "写入文件",
+    description: "向文件描述符写入字符串或二进制数据",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "fd", type: CapabilityDataType.NUMBER, required: true, description: "文件描述符" },
+      { name: "data", type: CapabilityDataType.STRING, required: false, description: "待写入字符串" },
+      { name: "buffer", type: CapabilityDataType.OBJECT, required: false, description: "待写入 ArrayBuffer" },
+      { name: "offset", type: CapabilityDataType.NUMBER, required: false, description: "写入偏移量" },
+      { name: "length", type: CapabilityDataType.NUMBER, required: false, description: "写入长度" },
+      { name: "encoding", type: CapabilityDataType.STRING, required: false, description: "字符串编码，默认 utf-8" }
+    ],
+    outputs: [
+      { name: "writeLen", type: CapabilityDataType.NUMBER, required: true, description: "写入字节数" }
+    ],
+    tags: ["file", "write"]
+  },
+  {
+    id: "file.listFile",
+    namespace: "File",
+    name: "listFile",
+    displayName: "列出目录内容",
+    description: "列出目录文件名或递归相对路径",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "目录路径" },
+      { name: "options", type: CapabilityDataType.OBJECT, required: false, description: "ListFileOptions" }
+    ],
+    outputs: [
+      { name: "fileNames", type: CapabilityDataType.ARRAY, required: true, description: "文件名数组" }
+    ],
+    tags: ["file", "list"]
+  },
+  {
+    id: "file.mkdir",
+    namespace: "File",
+    name: "mkdir",
+    displayName: "创建目录",
+    description: "在应用沙箱中创建目录",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "目录路径" }
+    ],
+    outputs: [],
+    tags: ["file", "mkdir"]
+  },
+  {
+    id: "file.stat",
+    namespace: "File",
+    name: "stat",
+    displayName: "查询文件属性",
+    description: "获取文件或目录详细属性信息",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "file", type: CapabilityDataType.OBJECT, required: false, description: "path 或 fd" },
+      { name: "path", type: CapabilityDataType.STRING, required: false, description: "文件路径" },
+      { name: "fd", type: CapabilityDataType.NUMBER, required: false, description: "文件描述符" }
+    ],
+    outputs: [
+      { name: "stat", type: CapabilityDataType.OBJECT, required: true, description: "Stat 对象" }
+    ],
+    tags: ["file", "stat"]
+  },
+  {
+    id: "file.unlink",
+    namespace: "File",
+    name: "unlink",
+    displayName: "删除文件",
+    description: "删除单个文件",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "文件路径" }
+    ],
+    outputs: [],
+    tags: ["file", "unlink"]
+  },
+  {
+    id: "file.rmdir",
+    namespace: "File",
+    name: "rmdir",
+    displayName: "删除目录",
+    description: "删除目录及其子目录和文件",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "path", type: CapabilityDataType.STRING, required: true, description: "目录路径" }
+    ],
+    outputs: [],
+    tags: ["file", "rmdir"]
+  },
+  {
+    id: "file.rename",
+    namespace: "File",
+    name: "rename",
+    displayName: "重命名",
+    description: "重命名文件或目录",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "oldPath", type: CapabilityDataType.STRING, required: true, description: "原路径" },
+      { name: "newPath", type: CapabilityDataType.STRING, required: true, description: "新路径" }
+    ],
+    outputs: [],
+    tags: ["file", "rename"]
+  },
+  {
+    id: "file.copyFile",
+    namespace: "File",
+    name: "copyFile",
+    displayName: "复制文件",
+    description: "复制文件到目标路径",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "src", type: CapabilityDataType.OBJECT, required: true, description: "源路径或源 fd" },
+      { name: "dest", type: CapabilityDataType.OBJECT, required: true, description: "目标路径或目标 fd" },
+      { name: "mode", type: CapabilityDataType.NUMBER, required: false, description: "覆盖模式，默认 0" }
+    ],
+    outputs: [],
+    tags: ["file", "copy"]
+  },
+  {
+    id: "file.moveFile",
+    namespace: "File",
+    name: "moveFile",
+    displayName: "移动文件",
+    description: "移动文件到目标路径",
+    version: "1.0.0",
+    category: AbilityCategory.SYSTEM,
+    inputs: [
+      { name: "src", type: CapabilityDataType.STRING, required: true, description: "源路径" },
+      { name: "dest", type: CapabilityDataType.STRING, required: true, description: "目标路径" },
+      { name: "mode", type: CapabilityDataType.NUMBER, required: false, description: "移动模式，默认 0" }
+    ],
+    outputs: [],
+    tags: ["file", "move"]
   }
 ];
 
