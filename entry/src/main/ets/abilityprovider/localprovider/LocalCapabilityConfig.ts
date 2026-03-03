@@ -52,6 +52,20 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
       { name: "events", type: CapabilityDataType.ARRAY, required: true, description: "事件列表" }
     ],
     tags: ["calendar", "query", "event"]
+  },
+  {
+    id: "call.makeCall",
+    namespace: "Call",
+    name: "makeCall",
+    displayName: "跳转拨号界面",
+    description: "打开系统拨号界面并显示待拨号码",
+    version: "1.0.0",
+    category: AbilityCategory.COMMUNICATION,
+    inputs: [
+      { name: "phoneNumber", type: CapabilityDataType.STRING, required: true, description: "电话号码" }
+    ],
+    outputs: [],
+    tags: ["call", "phone", "dialer"]
   }
 ];
 

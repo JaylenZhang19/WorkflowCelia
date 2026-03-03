@@ -3,6 +3,7 @@ import { InvokeResult, QueryMessage } from "./AbilityTypes";
 import { AbsAbilityManager } from "./AbsAbilityManager";
 import { AbsAbilityHandler } from "./localprovider/abilityhandler/AbsAbilityHandler";
 import { CalendarHandler } from "./localprovider/abilityhandler/CalendarHandler";
+import { CallHandler } from "./localprovider/abilityhandler/CallHandler";
 import { MOCK_PROVIDER_TOOLS } from "./localprovider/LocalCapabilityConfig";
 
 const TAG: string = 'LocalAbilityManager';
@@ -10,8 +11,9 @@ const TAG: string = 'LocalAbilityManager';
 export class LocalAbilityManager extends AbsAbilityManager {
   private static readonly INSTANCE: LocalAbilityManager = new LocalAbilityManager();
 
-  private static readonly HANDLER_MAP: Map<string, AbsAbilityHandler> = new Map([
+  private static readonly HANDLER_MAP: Map<string, AbsAbilityHandler> = new Map<string, AbsAbilityHandler>([
     ['Calendar', new CalendarHandler()],
+    ['Call', new CallHandler()],
   ]);
 
   private constructor() {
