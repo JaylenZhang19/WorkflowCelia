@@ -4,6 +4,7 @@ import { AbsAbilityManager } from "./AbsAbilityManager";
 import { AbsAbilityHandler } from "./localprovider/abilityhandler/AbsAbilityHandler";
 import { CalendarHandler } from "./localprovider/abilityhandler/CalendarHandler";
 import { CallHandler } from "./localprovider/abilityhandler/CallHandler";
+import { ContactHandler } from "./localprovider/abilityhandler/ContactHandler";
 import { MOCK_PROVIDER_TOOLS } from "./localprovider/LocalCapabilityConfig";
 
 const TAG: string = 'LocalAbilityManager';
@@ -14,6 +15,7 @@ export class LocalAbilityManager extends AbsAbilityManager {
   private static readonly HANDLER_MAP: Map<string, AbsAbilityHandler> = new Map<string, AbsAbilityHandler>([
     ['Calendar', new CalendarHandler()],
     ['Call', new CallHandler()],
+    ['Contact', new ContactHandler()],
   ]);
 
   private constructor() {
