@@ -1,8 +1,10 @@
 import { logger } from '../utils/Logger';
-import { QueryMessage } from '../abilityprovider/AbilityTypes';
 import { SessionStore } from './SessionStore';
 import { SkillRegistry } from './SkillRegistry';
 import { ToolRegistry } from './ToolRegistry';
+import { LlmPlanner } from './LlmPlanner';
+import { OpenAICompatibleClient, OpenAICompatibleConfig } from './LlmClient';
+import { ParsedSkillDocument } from './SkillSpec';
 import { AgentStepEvent, AgentTurnInput, AgentTurnResult, SkillDefinition, ToolPlan } from './types';
 
 const TAG = 'AgentRuntime';
@@ -11,16 +13,38 @@ interface RunTurnOptions {
   onStep?: (step: AgentStepEvent) => void;
 }
 
+interface AgentRuntimeConfig {
+  llm?: OpenAICompatibleConfig;
+}
+
 export class AgentRuntime {
   private readonly skillRegistry: SkillRegistry;
   private readonly toolRegistry: ToolRegistry;
   private readonly sessionStore: SessionStore;
+  private readonly llmPlanner?: LlmPlanner;
   private readonly defaultFilePath: string = '/data/storage/el2/base/files';
 
-  constructor(params?: { skillRegistry?: SkillRegistry; toolRegistry?: ToolRegistry; sessionStore?: SessionStore }) {
+  constructor(params?: {
+    skillRegistry?: SkillRegistry;
+    toolRegistry?: ToolRegistry;
+    sessionStore?: SessionStore;
+    config?: AgentRuntimeConfig;
+  }) {
     this.skillRegistry = params?.skillRegistry ?? new SkillRegistry();
     this.toolRegistry = params?.toolRegistry ?? new ToolRegistry();
     this.sessionStore = params?.sessionStore ?? new SessionStore();
+
+    const llmConfig = params?.config?.llm;
+    if (llmConfig) {
+      const client = new OpenAICompatibleClient(llmConfig);
+      if (client.isEnabled()) {
+        const docs = this.skillRegistry
+          .listSkillMetadata()
+          .map((meta) => this.skillRegistry.activateSkillByName(meta.name))
+          .filter((skill): skill is ParsedSkillDocument => Boolean(skill));
+        this.llmPlanner = new LlmPlanner(client, docs);
+      }
+    }
   }
 
   async runTurn(input: AgentTurnInput, options?: RunTurnOptions): Promise<AgentTurnResult> {
@@ -37,79 +61,110 @@ export class AgentRuntime {
       timestamp: Date.now()
     });
 
-    emit(
-      'thought',
-      'Understand Intent',
-      `Analyze user input and decide whether a tool call is needed.\nInput: ${input.input}`
-    );
-
-    const skill = this.skillRegistry.resolveSkill(input.input);
+    const planning = await this.plan(input.input);
+    emit('thought', 'Understand Intent', planning.thought);
     emit(
       'skill',
-      'Select Skill',
-      `Skill: ${skill.name}\nDescription: ${skill.description}\nAllowed tools: ${this.formatAllowedTools(skill)}`
+      `Select Skill (${planning.source})`,
+      `Skill: ${planning.selectedSkill.name}\nDescription: ${planning.selectedSkill.description}\nAllowed tools: ${this.formatAllowedTools(planning.selectedSkill)}`
     );
 
-    const plan = this.planToolCall(input.input, skill);
-    if (!plan) {
+    if (!planning.plan) {
       emit('action', 'Plan Action', 'No tool call required for this turn.');
-      emit('observation', 'Observe', 'No external observation. Answer from current intent only.');
-      const finalText =
-        `Skill "${skill.name}" selected. No tool invoked.\n` +
-        'Try: "list files", "show calendar events", or "query contact Alice".';
-      emit('final', 'Final Answer', finalText);
+      emit('observation', 'Observe', 'No external tool observation.');
+      const finalNoTool =
+        planning.finalDraft ||
+        `Skill "${planning.selectedSkill.name}" selected. No tool invoked for this input.`;
+      emit('final', 'Final Answer', finalNoTool);
       this.sessionStore.appendTurn(input.sessionId, {
         role: 'agent',
-        content: finalText,
+        content: finalNoTool,
         timestamp: Date.now()
       });
-      return { finalText, steps };
+      return { finalText: finalNoTool, steps };
     }
 
-    emit('action', 'Invoke Tool', `Reason: ${plan.reason}\nQuery:\n${this.toJson(plan.query)}`);
+    const toolAllowed = planning.selectedSkill.allowedTools.some(
+      (tool) =>
+        tool.namespace === planning.plan?.query.header.namespace &&
+        tool.name === planning.plan?.query.header.name
+    );
 
-    const toolExecution = await this.toolRegistry.invoke(plan.query);
+    if (!toolAllowed) {
+      const finalDenied =
+        `Tool denied by skill policy: ${planning.plan.query.header.namespace}.${planning.plan.query.header.name}.`;
+      emit('action', 'Invoke Tool', `Blocked by allowed-tools policy.\n${this.toJson(planning.plan.query)}`);
+      emit('observation', 'Tool Observation', 'No call executed due to policy guard.');
+      emit('final', 'Final Answer', finalDenied);
+      this.sessionStore.appendTurn(input.sessionId, {
+        role: 'agent',
+        content: finalDenied,
+        timestamp: Date.now()
+      });
+      return { finalText: finalDenied, steps };
+    }
+
+    emit('action', 'Invoke Tool', `Reason: ${planning.plan.reason}\nQuery:\n${this.toJson(planning.plan.query)}`);
+    const toolExecution = await this.toolRegistry.invoke(planning.plan.query);
     logger.info(
       TAG,
-      `Tool invocation: ${plan.query.header.namespace}.${plan.query.header.name}, success=${toolExecution.result.success}`
+      `Tool invocation: ${planning.plan.query.header.namespace}.${planning.plan.query.header.name}, success=${toolExecution.result.success}`
     );
     emit('observation', 'Tool Observation', this.toJson(toolExecution.result));
 
-    let finalText: string;
-    if (toolExecution.result.success) {
-      finalText =
-        `Tool executed successfully: ${plan.query.header.namespace}.${plan.query.header.name}\n` +
-        `Summary: ${this.summarizeOutputs(toolExecution.result.outputs)}`;
-    } else {
-      finalText =
-        `Tool failed: ${plan.query.header.namespace}.${plan.query.header.name}\n` +
-        `ErrorCode: ${toolExecution.result.errorCode ?? 'UNKNOWN'}\n` +
-        `Error: ${toolExecution.result.error ?? 'Unknown error'}`;
-    }
-    emit('final', 'Final Answer', finalText);
+    const finalText =
+      toolExecution.result.success
+        ? planning.finalDraft ||
+          `Tool executed successfully: ${planning.plan.query.header.namespace}.${planning.plan.query.header.name}\nSummary: ${this.summarizeOutputs(toolExecution.result.outputs)}`
+        : `Tool failed: ${planning.plan.query.header.namespace}.${planning.plan.query.header.name}\nErrorCode: ${toolExecution.result.errorCode ?? 'UNKNOWN'}\nError: ${toolExecution.result.error ?? 'Unknown error'}`;
 
+    emit('final', 'Final Answer', finalText);
     this.sessionStore.appendTurn(input.sessionId, {
       role: 'agent',
       content: finalText,
       timestamp: Date.now()
     });
-
     return { finalText, steps };
   }
 
-  private formatAllowedTools(skill: SkillDefinition): string {
-    if (skill.allowedTools.length === 0) {
-      return '(none)';
+  private async plan(input: string): Promise<{
+    source: 'llm' | 'rule';
+    thought: string;
+    selectedSkill: SkillDefinition;
+    plan: ToolPlan | null;
+    finalDraft: string;
+  }> {
+    if (this.llmPlanner) {
+      try {
+        const result = await this.llmPlanner.plan(input);
+        return {
+          source: 'llm',
+          thought: result.thought,
+          selectedSkill: result.selectedSkill,
+          plan: result.plan,
+          finalDraft: result.finalDraft
+        };
+      } catch (error) {
+        logger.warn(TAG, `LLM planning failed, fallback to rule planner: ${JSON.stringify(error)}`);
+      }
     }
-    return skill.allowedTools.map((tool) => `${tool.namespace}.${tool.name}`).join(', ');
+
+    const skill = this.skillRegistry.fallbackResolveSkill(input);
+    return {
+      source: 'rule',
+      thought: `Fallback rule planner selected. Analyze input and pick a safe tool plan.\nInput: ${input}`,
+      selectedSkill: skill,
+      plan: this.fallbackPlanToolCall(input, skill),
+      finalDraft: ''
+    };
   }
 
-  private planToolCall(input: string, skill: SkillDefinition): ToolPlan | null {
-    if (skill.id === 'file_ops') {
+  private fallbackPlanToolCall(input: string, skill: ParsedSkillDocument): ToolPlan | null {
+    if (skill.name === 'file-ops') {
       const pathMatch = input.match(/(?:path|路径)\s*[:=]\s*([^\s,]+)/i);
       const path = pathMatch && pathMatch[1] ? pathMatch[1] : this.defaultFilePath;
       return {
-        reason: 'File skill matched. Inspect directory entries with File.listFile.',
+        reason: 'Rule planner selected File.listFile.',
         query: {
           header: { namespace: 'File', name: 'listFile' },
           payload: { args: { path } }
@@ -117,11 +172,11 @@ export class AgentRuntime {
       };
     }
 
-    if (skill.id === 'calendar_ops') {
+    if (skill.name === 'calendar-ops') {
       const now = Date.now();
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
       return {
-        reason: 'Calendar skill matched. Query nearby events in a 14-day window.',
+        reason: 'Rule planner selected Calendar.getEvents.',
         query: {
           header: { namespace: 'Calendar', name: 'getEvents' },
           payload: { args: { start: now - sevenDaysMs, end: now + sevenDaysMs } }
@@ -129,11 +184,11 @@ export class AgentRuntime {
       };
     }
 
-    if (skill.id === 'contact_ops') {
+    if (skill.name === 'contact-ops') {
       const keyMatch = input.match(/(?:contact|联系人)\s+([^\s,]+)/i);
       const key = keyMatch && keyMatch[1] ? keyMatch[1] : 'default';
       return {
-        reason: 'Contact skill matched. Query contact by extracted key.',
+        reason: 'Rule planner selected Contact.queryContact.',
         query: {
           header: { namespace: 'Contact', name: 'queryContact' },
           payload: { args: { key } }
@@ -142,6 +197,13 @@ export class AgentRuntime {
     }
 
     return null;
+  }
+
+  private formatAllowedTools(skill: SkillDefinition): string {
+    if (skill.allowedTools.length === 0) {
+      return '(none)';
+    }
+    return skill.allowedTools.map((tool) => `${tool.namespace}.${tool.name}`).join(', ');
   }
 
   private summarizeOutputs(outputs?: Record<string, any>): string {
@@ -159,4 +221,3 @@ export class AgentRuntime {
     }
   }
 }
-

@@ -62,10 +62,14 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - Agent Runtime 模块（新增，已落地代码）  
   `entry/src/main/ets/agent/AgentRuntime.ts`  
   `entry/src/main/ets/agent/SkillRegistry.ts`  
+  `entry/src/main/ets/agent/SkillSpec.ts`  
+  `entry/src/main/ets/agent/LlmPlanner.ts`  
+  `entry/src/main/ets/agent/LlmClient.ts`  
+  `entry/src/main/ets/agent/AgentConfig.ts`  
   `entry/src/main/ets/agent/ToolRegistry.ts`  
   `entry/src/main/ets/agent/SessionStore.ts`  
   `entry/src/main/ets/agent/types.ts`  
-  提供最小可运行架构：skill 解析、tool 调用、session 记录、ReAct 步骤事件输出。
+  提供最小可运行架构：skill 解析、LLM 规划、tool 调用、session 记录、ReAct 步骤事件输出。
 
 ### 2.3 已接入的本地 tools（23 个）
 
@@ -91,13 +95,15 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - ChatPage 的 `ACTION` 步骤已接入 `GeneralAbilityManager.handleQueryMessage()` 执行 tool 调用
 - `Run Test` 按钮已保留用于鸿蒙能力验证
 - Agent 架构代码已开始实现并接入页面（ChatPage -> AgentRuntime）
+- LLM Planner 已接入两阶段流程：Skill metadata Discovery -> Skill instructions Activation -> Tool planning
+- Skill 定义已按 `SKILL.md` 规范解析（frontmatter `name`/`description`/`allowed-tools`）
 
 ### 3.2 进行中 / 未完成
 
 - `RemoteAbilityManager` 的 IPC 实现（协议映射、超时、重试、错误分层）
 - Agent Runtime 目前为最小可运行版本，尚缺模型推理、上下文压缩和容错机制
-- ReAct 流程仍为 Demo 规则驱动，尚未接入真实 LLM 推理
-- Tool 规划目前仍为规则匹配（File/Calendar/Contact），后续需替换为模型驱动 Planner
+- 默认 LLM 配置为关闭（`AgentConfig.ts`），需填入 API Key 并开启后才会走真实网络规划
+- 当前保留规则兜底 Planner（当 LLM 不可用或返回异常时自动回退）
 
 ## 4. 下一阶段：Agent Demo（To-Be）
 
@@ -165,26 +171,33 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - `Run Test` 按钮是固定验证入口，后续迭代不得删除
 - ReAct 的 `Action` 步骤如涉及工具调用，必须走 `GeneralAbilityManager`
 
-### 5.5 新增能力流程
+### 5.5 Skill 规范约束
+
+- Skill 必须以 `SKILL.md` 表达，包含 YAML frontmatter + Markdown body
+- frontmatter 至少包含 `name` 和 `description`
+- `name` 需满足：1-64 字符、小写字母数字和连字符、与目录名一致
+- `allowed-tools` 用于工具白名单约束，Agent 执行前必须校验
+- 运行时遵循 progressive disclosure：先看 metadata，再激活并读取完整指令
+### 5.6 新增能力流程
 
 1. 在 `LocalCapabilityConfig.ts` 增加能力元数据
 2. 在 `abilityhandler/` 创建或扩展 handler（继承基类）
 3. 在 `LocalAbilityManager.HANDLER_MAP` 注册
 4. 返回值严格符合 `InvokeResult`
 
-### 5.6 错误处理
+### 5.7 错误处理
 
 - 所有失败分支必须 `success: false`
 - 必须包含可定位字段（至少 `errorCode` + `error`）
 - 禁止仅透传原始异常，需结构化
 
-### 5.7 日志要求
+### 5.8 日志要求
 
 - 关键点必须有日志：入口、路由命中、调用参数摘要、执行结果、异常
 - 日志最少包含：`namespace`、`name`、`requestId/traceId`（若有）
 - 不记录敏感信息原文（手机号、邮箱、token、文件隐私内容）
 
-### 5.8 兼容与稳定性
+### 5.9 兼容与稳定性
 
 - 任何新增字段优先“向后兼容”，不要破坏已存在调用方
 - 公共类型改动需同步更新文档与调用点
@@ -211,4 +224,4 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - 逐步替换规则驱动为模型驱动
 
 ---
-最后更新：2026-03-04（ChatPage ReAct 可视化已接入）
+最后更新：2026-03-05（LLM Planner + Skill 规范解析已接入）

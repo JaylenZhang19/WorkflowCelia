@@ -1,5 +1,6 @@
 import { logger } from '../utils/Logger';
 import { AgentRuntime } from '../agent/AgentRuntime';
+import { DEFAULT_LLM_CONFIG } from '../agent/AgentConfig';
 import { AgentStepEvent, ReActStepType } from '../agent/types';
 import { testFunc } from '../entryability/EntryAbility';
 
@@ -21,7 +22,11 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State scrollToBottom: number = 0;
   private scroller: Scroller = new Scroller();
-  private readonly agentRuntime: AgentRuntime = new AgentRuntime();
+  private readonly agentRuntime: AgentRuntime = new AgentRuntime({
+    config: {
+      llm: DEFAULT_LLM_CONFIG
+    }
+  });
 
   aboutToAppear() {
     this.messages.push({
