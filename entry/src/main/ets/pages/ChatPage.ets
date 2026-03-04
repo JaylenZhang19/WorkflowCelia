@@ -1,4 +1,3 @@
-import router from '@ohos.router';
 import { logger } from '../utils/Logger';
 import { GeneralAbilityManager } from '../abilityprovider/GeneralAbilityManager';
 import { QueryMessage, InvokeResult } from '../abilityprovider/AbilityTypes';
@@ -6,11 +5,32 @@ import { testFunc } from '../entryability/EntryAbility';
 
 const TAG: string = 'ChatPage';
 
+type AgentStepType = 'thought' | 'skill' | 'action' | 'observation' | 'final';
+
 interface Message {
   id: string;
   content: string;
   role: 'user' | 'agent';
   timestamp: number;
+  stepType?: AgentStepType;
+}
+
+interface GeneratedTypeLiteralInterface_1 {
+  namespace: string;
+  name: string;
+}
+
+interface SkillDefinition {
+  id: string;
+  name: string;
+  description: string;
+  keywords: string[];
+  allowedTools: Array<GeneratedTypeLiteralInterface_1>;
+}
+
+interface ToolPlan {
+  reason: string;
+  query: QueryMessage;
 }
 
 @Entry
@@ -21,19 +41,52 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State scrollToBottom: number = 0;
   private scroller: Scroller = new Scroller();
+  private abilityManager: GeneralAbilityManager = GeneralAbilityManager.getInstance();
+  private readonly defaultFilePath: string = '/data/storage/el2/base/files';
+  private readonly skills: SkillDefinition[] = [
+    {
+      id: 'file_ops',
+      name: 'FileOps',
+      description: '处理文件查看相关请求',
+      keywords: ['file', '文件', '目录', 'list', 'ls', 'path'],
+      allowedTools: [{ namespace: 'File', name: 'listFile' }]
+    },
+    {
+      id: 'calendar_ops',
+      name: 'CalendarOps',
+      description: '处理日历查询请求',
+      keywords: ['calendar', '日历', 'schedule', '会议', 'event'],
+      allowedTools: [{ namespace: 'Calendar', name: 'getEvents' }]
+    },
+    {
+      id: 'contact_ops',
+      name: 'ContactOps',
+      description: '处理联系人查询请求',
+      keywords: ['contact', '联系人', 'phonebook'],
+      allowedTools: [{ namespace: 'Contact', name: 'queryContact' }]
+    },
+    {
+      id: 'general',
+      name: 'General',
+      description: '通用问答和澄清',
+      keywords: [],
+      allowedTools: []
+    }
+  ];
 
   aboutToAppear() {
-    // Add welcome message
     this.messages.push({
       id: this.generateId(),
-      content: 'Hello! I am WorkflowCelia Agent. How can I help you today?',
+      content:
+        'Hello! I am WorkflowCelia Agent.\n' +
+        'This page now shows ReAct steps: Thought -> Skill -> Action -> Observation -> Final.',
       role: 'agent',
       timestamp: Date.now()
     });
   }
 
   generateId(): string {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    return Date.now().toString() + Math.random().toString(36).slice(2, 11);
   }
 
   sendMessage() {
@@ -54,32 +107,20 @@ struct ChatPage {
     this.isSending = true;
     this.scrollToBottom++;
 
-    // Process user input and get agent response
-    this.processUserInput(userInput);
+    void this.processUserInput(userInput);
   }
 
   async processUserInput(input: string) {
     try {
-      // TODO: Integrate with Agent logic in the future
-      // For now, use a simple rule-based response
-      const response = await this.getAgentResponse(input);
-      
-      const agentMessage: Message = {
-        id: this.generateId(),
-        content: response,
-        role: 'agent',
-        timestamp: Date.now()
-      };
-      
-      this.messages.push(agentMessage);
-      this.scrollToBottom++;
+      await this.runReactFlow(input);
     } catch (error) {
       logger.error(TAG, `Failed to process input: ${JSON.stringify(error)}`);
       const errorMessage: Message = {
         id: this.generateId(),
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'Final: Sorry, I encountered an error. Please try again.',
         role: 'agent',
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        stepType: 'final'
       };
       this.messages.push(errorMessage);
       this.scrollToBottom++;
@@ -88,35 +129,182 @@ struct ChatPage {
     }
   }
 
-  async getAgentResponse(input: string): Promise<string> {
-    // Simple rule-based responses for demo
-    // TODO: Replace with actual Agent inference logic
-    const lowerInput = input.toLowerCase();
-    
-    if (lowerInput.includes('calendar') || lowerInput.includes('schedule')) {
-      return 'I can help you manage your calendar. You can ask me to add, delete, or query calendar events.';
-    } else if (lowerInput.includes('contact')) {
-      return 'I can help you manage contacts. You can ask me to add, update, or query contact information.';
-    } else if (lowerInput.includes('file') || lowerInput.includes('document')) {
-      return 'I can help you manage files. You can ask me to read, write, copy, move, or delete files.';
-    } else if (lowerInput.includes('email') || lowerInput.includes('mail')) {
-      return 'I can help you send emails. Just provide the recipient and content.';
-    } else if (lowerInput.includes('sms') || lowerInput.includes('message') || lowerInput.includes('text')) {
-      return 'I can help you send SMS messages. Just provide the phone number and message content.';
-    } else if (lowerInput.includes('camera') || lowerInput.includes('photo')) {
-      return 'I can help you take photos. You can use the camera function to capture images.';
-    } else if (lowerInput.includes('call') || lowerInput.includes('phone')) {
-      return 'I can help you make phone calls. Just provide the phone number.';
-    } else if (lowerInput.includes('hello') || lowerInput.includes('hi')) {
-      return 'Hello! How can I assist you today?';
-    } else {
-      return `I received your message: "${input}". I'm currently in demo mode. Full Agent inference logic will be integrated soon.`;
+  private async runReactFlow(input: string): Promise<void> {
+    const thought = `I should understand the user intent and decide whether I need a tool call.\nUser Input: ${input}`;
+    this.appendAgentStep('thought', thought);
+    await this.delay(120);
+
+    const skill = this.resolveSkill(input);
+    this.appendAgentStep(
+      'skill',
+      `Selected skill: ${skill.name}\nDescription: ${skill.description}\nAllowed tools: ${this.formatAllowedTools(skill)}`
+    );
+    await this.delay(120);
+
+    const toolPlan = this.planToolCall(input, skill);
+    if (!toolPlan) {
+      this.appendAgentStep(
+        'action',
+        'No tool call is required for this input. I will answer directly.'
+      );
+      await this.delay(120);
+      this.appendAgentStep(
+        'observation',
+        'No external tool result. Observation is based on intent analysis only.'
+      );
+      await this.delay(120);
+      this.appendAgentStep(
+        'final',
+        `I understood your request with skill "${skill.name}". ` +
+          'No tool was invoked in this turn. For tool execution demo, try inputs like:\n' +
+          '- "list files"\n- "show calendar events"\n- "query contact Alice"'
+      );
+      return;
     }
+
+    this.appendAgentStep(
+      'action',
+      `Invoke tool:\n${this.prettyQuery(toolPlan.query)}\nReason: ${toolPlan.reason}`
+    );
+    await this.delay(120);
+
+    const invokeResult = await this.abilityManager.handleQueryMessage(toolPlan.query);
+    this.appendAgentStep('observation', `Tool result:\n${this.safeJson(invokeResult)}`);
+    await this.delay(120);
+
+    if (invokeResult.success) {
+      this.appendAgentStep(
+        'final',
+        `Tool executed successfully.\nSummary: ${this.summarizeSuccess(toolPlan.query, invokeResult)}`
+      );
+      return;
+    }
+
+    this.appendAgentStep(
+      'final',
+      `Tool execution failed.\nErrorCode: ${invokeResult.errorCode ?? 'UNKNOWN'}\n` +
+        `Error: ${invokeResult.error ?? 'Unknown error'}`
+    );
+  }
+
+  private resolveSkill(input: string): SkillDefinition {
+    const lowerInput = input.toLowerCase();
+    for (const skill of this.skills) {
+      if (skill.id === 'general') {
+        continue;
+      }
+      for (const keyword of skill.keywords) {
+        if (lowerInput.includes(keyword)) {
+          return skill;
+        }
+      }
+    }
+    return this.skills[this.skills.length - 1];
+  }
+
+  private formatAllowedTools(skill: SkillDefinition): string {
+    if (skill.allowedTools.length === 0) {
+      return '(none)';
+    }
+    return skill.allowedTools.map((tool) => `${tool.namespace}.${tool.name}`).join(', ');
+  }
+
+  private planToolCall(input: string, skill: SkillDefinition): ToolPlan | null {
+    if (skill.id === 'file_ops') {
+      const pathMatch = input.match(/(?:path|路径)\s*[:=]\s*([^\s,]+)/i);
+      const path = pathMatch && pathMatch[1] ? pathMatch[1] : this.defaultFilePath;
+      return {
+        reason: 'File skill matched. Use File.listFile to inspect directory entries.',
+        query: {
+          header: {
+            namespace: 'File',
+            name: 'listFile'
+          },
+          payload: {
+            args: { path }
+          }
+        }
+      };
+    }
+
+    if (skill.id === 'calendar_ops') {
+      const now = Date.now();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      return {
+        reason: 'Calendar skill matched. Query recent and upcoming events.',
+        query: {
+          header: {
+            namespace: 'Calendar',
+            name: 'getEvents'
+          },
+          payload: {
+            args: { start: now - sevenDaysMs, end: now + sevenDaysMs }
+          }
+        }
+      };
+    }
+
+    if (skill.id === 'contact_ops') {
+      const keyMatch = input.match(/(?:contact|联系人)\s+([^\s,]+)/i);
+      const key = keyMatch && keyMatch[1] ? keyMatch[1] : 'default';
+      return {
+        reason: 'Contact skill matched. Try queryContact with extracted key.',
+        query: {
+          header: {
+            namespace: 'Contact',
+            name: 'queryContact'
+          },
+          payload: {
+            args: { key }
+          }
+        }
+      };
+    }
+
+    return null;
+  }
+
+  private summarizeSuccess(query: QueryMessage, result: InvokeResult): string {
+    const toolName = `${query.header.namespace}.${query.header.name}`;
+    if (result.outputs) {
+      return `${toolName} -> ${this.safeJson(result.outputs)}`;
+    }
+    return `${toolName} succeeded with no outputs.`;
+  }
+
+  private prettyQuery(query: QueryMessage): string {
+    return this.safeJson(query);
+  }
+
+  private safeJson(value: object): string {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (_) {
+      return String(value);
+    }
+  }
+
+  private appendAgentStep(stepType: AgentStepType, content: string): void {
+    this.messages.push({
+      id: this.generateId(),
+      content,
+      role: 'agent',
+      timestamp: Date.now(),
+      stepType
+    });
+    this.scrollToBottom++;
+  }
+
+  private async delay(ms: number): Promise<void> {
+    await new Promise<void>((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, ms);
+    });
   }
 
   runTest() {
     logger.info(TAG, 'Test button clicked, running test function');
-    // Call the exported test function from EntryAbility
     testFunc().catch((error: Error) => {
       logger.error(TAG, `Test execution failed: ${JSON.stringify(error)}`);
     });
@@ -162,7 +350,6 @@ struct ChatPage {
       .width('100%')
       .scrollBar(BarState.Off)
 
-
       // Input Area
       Row() {
         TextInput({ placeholder: 'Type a message...', text: this.inputText })
@@ -206,9 +393,9 @@ struct ChatPage {
     Row() {
       if (message.role === 'user') {
         Blank()
-        this.MessageBubble(message, '#007AFF', '#FFFFFF', Alignment.End)
+        this.MessageBubble(message, '#007AFF', '#FFFFFF')
       } else {
-        this.MessageBubble(message, '#E5E5EA', '#1C1C1E', Alignment.Start)
+        this.MessageBubble(message, '#E5E5EA', '#1C1C1E')
         Blank()
       }
     }
@@ -217,12 +404,22 @@ struct ChatPage {
   }
 
   @Builder
-  MessageBubble(message: Message, bgColor: string, textColor: string, alignment: Alignment) {
+  MessageBubble(message: Message, bgColor: string, textColor: string) {
     Column() {
+      if (message.role === 'agent' && message.stepType) {
+        Text(this.getStepTitle(message.stepType))
+          .fontSize(11)
+          .fontColor('#4A4A4A')
+          .fontWeight(FontWeight.Medium)
+          .backgroundColor('#D1D1D6')
+          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .borderRadius(8)
+          .margin({ bottom: 6 })
+      }
+
       Text(message.content)
         .fontSize(16)
         .fontColor(textColor)
-
 
       Text(this.formatTime(message.timestamp))
         .fontSize(12)
@@ -239,5 +436,21 @@ struct ChatPage {
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
+  }
+
+  getStepTitle(stepType: AgentStepType): string {
+    if (stepType === 'thought') {
+      return 'THOUGHT';
+    }
+    if (stepType === 'skill') {
+      return 'SKILL';
+    }
+    if (stepType === 'action') {
+      return 'ACTION';
+    }
+    if (stepType === 'observation') {
+      return 'OBSERVATION';
+    }
+    return 'FINAL';
   }
 }
