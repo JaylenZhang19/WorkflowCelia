@@ -44,10 +44,13 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
     namespace: "Calendar",
     name: "getEvents",
     displayName: "查询日历事件",
-    description: "查询当前日历中的事件列表",
+    description: "查询当前日历中的事件列表，支持按时间范围过滤",
     version: "1.0.0",
     category: AbilityCategory.CALENDAR,
-    inputs: [],
+    inputs: [
+      { name: "start", type: CapabilityDataType.NUMBER, required: false, description: "开始时间戳（13 位毫秒格式）" },
+      { name: "end", type: CapabilityDataType.NUMBER, required: false, description: "结束时间戳（13 位毫秒格式）" }
+    ],
     outputs: [
       { name: "events", type: CapabilityDataType.ARRAY, required: true, description: "事件列表" }
     ],

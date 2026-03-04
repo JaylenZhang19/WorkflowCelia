@@ -145,9 +145,21 @@ export class CalendarHandler extends AbsAbilityHandler {
     }
   }
 
-  private getEvents = async (): Promise<InvokeResult> => {
+  private getEvents = async (args?: Record<string, any>): Promise<InvokeResult> => {
     try {
-      const events = await this.currentCalender.getEvents();
+      let events: calendarManager.Event[] = [];
+      
+      // 如果同时提供了 start 和 end，则使用时间范围过滤
+      if (args && args.start !== undefined && args.end !== undefined) {
+        const filter = calendarManager.EventFilter.filterByTime(args.start, args.end);
+        events = await this.currentCalender.getEvents(filter);
+        logger.info(TAG, `getEvents with time filter: start=${args.start}, end=${args.end}, count=${events.length}`);
+      } else {
+        // 无参数或时间参数不完整时返回所有事件
+        events = await this.currentCalender.getEvents();
+        logger.info(TAG, `getEvents all events, count=${events.length}`);
+      }
+      
       return {
         success: true,
         outputs: {
