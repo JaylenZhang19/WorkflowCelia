@@ -370,41 +370,21 @@ export const MOCK_PROVIDER_TOOLS: MockProviderToolCapability[] = [
       { name: "started", type: CapabilityDataType.BOOLEAN, required: true, description: "是否成功拉起邮件能力" }
     ],
     tags: ["mail", "communication", "share"]
+  },
+  {
+    id: "sms.sendSms",
+    namespace: "Sms",
+    name: "sendSms",
+    displayName: "发送短信",
+    description: "拉起系统短信应用并填充收件人号码和短信内容",
+    version: "1.0.0",
+    category: AbilityCategory.COMMUNICATION,
+    inputs: [
+      { name: "phoneNumbers", type: CapabilityDataType.STRING, required: false, description: "收件人电话号码，多个号码用英文逗号分隔" },
+      { name: "body", type: CapabilityDataType.STRING, required: false, description: "短信正文内容" }
+    ],
+    outputs: [
+    ],
+    tags: ["sms", "communication", "message"]
   }
 ];
-
-export function getMockProviderTools(): MockProviderToolCapability[] {
-  return [...MOCK_PROVIDER_TOOLS];
-}
-
-export function getMockProviderToolById(id: string): MockProviderToolCapability | null {
-  const capability = MOCK_PROVIDER_TOOLS.find((item: MockProviderToolCapability) => item.id === id);
-  return capability ?? null;
-}
-
-export function getMockProviderTool(namespace: string, name: string): MockProviderToolCapability | null {
-  const capability = MOCK_PROVIDER_TOOLS.find((item: MockProviderToolCapability) => {
-    return item.namespace === namespace && item.name === name;
-  });
-  return capability ?? null;
-}
-
-export function buildQueryMessage(namespace: string, name: string, args: Record<string, any>): QueryMessage {
-  return {
-    header: {
-      namespace,
-      name
-    },
-    payload: {
-      args
-    }
-  };
-}
-
-export function buildQueryMessageByToolId(toolId: string, args: Record<string, any>): QueryMessage | null {
-  const capability = getMockProviderToolById(toolId);
-  if (!capability) {
-    return null;
-  }
-  return buildQueryMessage(capability.namespace, capability.name, args);
-}

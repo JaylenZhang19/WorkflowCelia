@@ -9,12 +9,22 @@ const TAG = 'EntryAbility';
 
 export let globalContext: common.UIAbilityContext;
 
-export default class EntryAbility extends UIAbility {
+export let testFunc = (): Promise<void> => {
+  EntryAbility.getInstance()?.test();
+  return;
+}
 
+export default class EntryAbility extends UIAbility {
+  private static instance: EntryAbility | null = null;
+
+  public static getInstance(): EntryAbility | null {
+    return EntryAbility.instance;
+  }
 
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     logger.info(TAG, 'Ability onCreate');
     globalContext = this.context;
+    EntryAbility.instance = this;
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
@@ -26,7 +36,7 @@ export default class EntryAbility extends UIAbility {
     });
   }
 
-  private async test() {
+  public async test() {
     const cameraQuery: QueryMessage = {
       header: {
         namespace: 'Camera',

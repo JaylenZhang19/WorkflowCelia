@@ -7,7 +7,10 @@ import router from '@ohos.router';
 @Component
 struct Index {
   aboutToAppear() {
-
+    // Navigate to chat page on load
+    router.replaceUrl({
+      url: 'pages/ChatPage'
+    });
   }
 
   build() {

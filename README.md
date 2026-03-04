@@ -3,56 +3,87 @@
 ## 1. 项目是做什么的
 WorkflowCelia 是一个基于鸿蒙（HarmonyOS / ArkTS）的 Agent 应用工程。
 
-当前阶段目标不是实现完整 Agent 推理逻辑，而是先把鸿蒙系统能力做成可被统一调用的“工具能力层（Tool Abilities）”，让后续 Agent 可以在应用运行时按报文调用这些能力，完成复杂任务编排。
+当前阶段目标不是实现完整 Agent 推理逻辑，而是先把鸿蒙系统能力做成可被统一调用的"工具能力层（Tool Abilities）"，让后续 Agent 可以在应用运行时按报文调用这些能力，完成复杂任务编排。
 
 一句话概括：
-- 现在：先打通和标准化“能力调用层”。
+- 现在：先打通和标准化"能力调用层"。
 - 后续：在这个调用层之上接入 Agent 逻辑。
 
 ## 2. 当前实现状态
-当前代码已完成“能力工具化”的基础框架，主要包含：
-- 统一请求报文结构（`QueryMessage`）和调用结果结构（`InvokeResult`）。
-- 本地能力管理与分发（Local）。
-- 总入口管理器（General）用于统一路由。
-- 示例能力：日历能力（新增/删除/查询事件）。
 
-尚未完成：
-- 远端能力调用（Remote）的具体实现。
+### 已完成
+当前代码已完成"能力工具化"的基础框架，主要包含：
+
+**核心框架**
+- 统一请求报文结构（`QueryMessage`）和调用结果结构（`InvokeResult`）。
+- 本地能力管理与分发（`LocalAbilityManager`）。
+- 总入口管理器（`GeneralAbilityManager`）用于统一路由。
+- 远端能力管理器占位（`RemoteAbilityManager`）。
+
+**已实现的能力 Handlers（7 个）**
+| Handler | Namespace | 能力数量 | 说明 |
+|---------|-----------|----------|------|
+| `CalendarHandler` | Calendar | 3 | 日历事件管理（新增/删除/查询） |
+| `CameraHandler` | Camera | 1 | 拉起相机拍摄 |
+| `CallHandler` | Call | 1 | 跳转拨号界面 |
+| `ContactHandler` | Contact | 3 | 联系人管理（新增/更新/查询） |
+| `FileHandler` | File | 13 | 文件操作（读/写/删除/复制/移动等） |
+| `MailHandler` | Mail | 1 | 发送邮件 |
+| `SmsHandler` | Sms | 1 | 发送短信 |
+
+**总计：23 个工具能力已定义并可实现调用**
+
+### 尚未完成
+- 远端能力调用（Remote）的 IPC 具体实现。
 - Agent 相关决策、规划、推理等核心逻辑。
+- UI 交互界面（当前仅显示 "Loading Workflow..."）。
 
 ## 3. 核心模块说明
 
 ### 3.1 统一入口（工具调用总入口）
-[entry/src/main/ets/abilityprovider/GeneralAbilityManager.ts](/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/entry/src/main/ets/abilityprovider/GeneralAbilityManager.ts)
+[entry/src/main/ets/abilityprovider/GeneralAbilityManager.ts](entry/src/main/ets/abilityprovider/GeneralAbilityManager.ts)
 - 整个工具调用链路的统一入口。
 - 负责初始化本地和远端能力集合。
 - 对外接收 `QueryMessage`，并路由到对应能力管理器处理。
 
 ### 3.2 本地能力入口
-[entry/src/main/ets/abilityprovider/LocalAbilityManager.ts](/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/entry/src/main/ets/abilityprovider/LocalAbilityManager.ts)
+[entry/src/main/ets/abilityprovider/LocalAbilityManager.ts](entry/src/main/ets/abilityprovider/LocalAbilityManager.ts)
 - 本应用内鸿蒙能力的统一入口。
 - 通过 `HANDLER_MAP` 管理各 namespace 对应的 handler。
-- 当前已接入 `CalendarHandler`（日历能力）。
+- 当前已接入 7 个 Handler：`CalendarHandler`、`CameraHandler`、`CallHandler`、`ContactHandler`、`FileHandler`、`MailHandler`、`SmsHandler`。
 
 ### 3.3 外部能力入口
-[entry/src/main/ets/abilityprovider/RemoteAbilityManager.ts](/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/entry/src/main/ets/abilityprovider/RemoteAbilityManager.ts)
+[entry/src/main/ets/abilityprovider/RemoteAbilityManager.ts](entry/src/main/ets/abilityprovider/RemoteAbilityManager.ts)
 - 外部应用能力入口（预留）。
 - 目前仍是框架占位，未实现具体调用逻辑。
 
 ### 3.4 能力定义与报文协议
-[entry/src/main/ets/abilityprovider/AbilityTypes.ts](/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/entry/src/main/ets/abilityprovider/AbilityTypes.ts)
+[entry/src/main/ets/abilityprovider/AbilityTypes.ts](entry/src/main/ets/abilityprovider/AbilityTypes.ts)
 - 定义了能力调用请求/响应协议与能力元数据：
-- `QueryMessage`：请求头（`namespace` + `name`）与参数载荷。
-- `InvokeResult`：统一调用结果格式（成功、输出、错误码等）。
-- `MockProviderToolCapability`：工具能力描述（输入、输出、版本、分类等）。
+  - `QueryMessage`：请求头（`namespace` + `name`）与参数载荷。
+  - `InvokeResult`：统一调用结果格式（成功、输出、错误码等）。
+  - `MockProviderToolCapability`：工具能力描述（输入、输出、版本、分类等）。
+  - `AbilityCategory`：能力分类枚举。
+  - `CapabilityDataType`：数据类型枚举。
 
-### 3.5 本地能力示例（日历）
-[entry/src/main/ets/abilityprovider/localprovider/abilityhandler/CalendarHandler.ts](/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/entry/src/main/ets/abilityprovider/localprovider/abilityhandler/CalendarHandler.ts)
-- 封装 CalendarKit 能力。
-- 当前支持：`addEvent`、`deleteEvent`、`getEvents`。
+### 3.5 能力配置与注册
+[entry/src/main/ets/abilityprovider/localprovider/LocalCapabilityConfig.ts](entry/src/main/ets/abilityprovider/localprovider/LocalCapabilityConfig.ts)
+- 集中配置所有本地能力的元数据（23 个工具能力）。
+- 提供工具查询辅助函数：`getMockProviderToolById`、`getMockProviderTool`、`buildQueryMessage`。
+
+### 3.6 本地能力 Handlers
+[entry/src/main/ets/abilityprovider/localprovider/abilityhandler/](entry/src/main/ets/abilityprovider/localprovider/abilityhandler/)
+- `AbsAbilityHandler.ts`：抽象基类，定义 handler 接口规范。
+- `CalendarHandler.ts`：封装 CalendarKit，支持 `addEvent`、`deleteEvent`、`getEvents`。
+- `CameraHandler.ts`：封装相机选择器，支持 `pick`（拍照/录像）。
+- `CallHandler.ts`：封装拨号能力，支持 `makeCall`。
+- `ContactHandler.ts`：封装 ContactsKit，支持 `addContact`、`updateContact`、`queryContact`。
+- `FileHandler.ts`：封装 fileIo 模块，支持 13 种文件操作（access/open/close/read/write/listFile/mkdir/stat/unlink/rmdir/rename/copyFile/moveFile）。
+- `MailHandler.ts`：封装邮件能力，支持 `send`。
+- `SmsHandler.ts`：封装短信能力，支持 `sendSms`（拉起系统短信应用）。
 
 ## 4. 远端能力（IPC）设计方向
-你的目标是通过 IPC 将报文发送到外部应用，实现跨应用能力调用。
+目标是通过 IPC 将报文发送到外部应用，实现跨应用能力调用。
 
 建议保持以下原则（仅文档约束，不代表当前已实现）：
 - 统一报文协议：远端 IPC 请求体与本地 `QueryMessage` 对齐。
@@ -61,7 +92,7 @@ WorkflowCelia 是一个基于鸿蒙（HarmonyOS / ArkTS）的 Agent 应用工程
 - 可观测性：为每次调用增加 traceId / requestId，方便排障。
 
 ## 5. README 的作用（本项目内）
-本 `README.md` 作为团队与 Agent 协作的“项目约束入口文档”，主要作用是：
+本 `README.md` 作为团队与 Agent 协作的"项目约束入口文档"，主要作用是：
 - 让新接手的人快速理解项目目标与当前边界（做了什么/没做什么）。
 - 固化核心入口文件，避免改动时找错位置。
 - 约束编码规范，降低后续协作中的风格漂移和返工。
@@ -78,9 +109,9 @@ WorkflowCelia 是一个基于鸿蒙（HarmonyOS / ArkTS）的 Agent 应用工程
 
 ### 6.2 能力开发规范
 新增能力时遵循以下流程：
-1. 在能力配置中补充工具定义（namespace、name、inputs、outputs）。
-2. 为该 namespace 增加或扩展对应 handler。
-3. 在 `LocalAbilityManager` 或 `RemoteAbilityManager` 中注册入口。
+1. 在 `LocalCapabilityConfig.ts` 中补充工具定义（namespace、name、inputs、outputs）。
+2. 在 `abilityhandler/` 目录下创建或扩展对应 handler（继承 `AbsAbilityHandler`）。
+3. 在 `LocalAbilityManager.HANDLER_MAP` 中注册 handler。
 4. 保证返回值统一为 `InvokeResult`。
 
 ### 6.3 路由与协议规范
@@ -99,13 +130,22 @@ WorkflowCelia 是一个基于鸿蒙（HarmonyOS / ArkTS）的 Agent 应用工程
 ## 7. 当前开发边界说明
 为避免偏离方向，当前阶段默认边界如下：
 - 不在此阶段实现 Agent 推理/规划逻辑。
-- 优先建设并稳定“能力工具化 + 调用协议 + 路由层”。
+- 优先建设并稳定"能力工具化 + 调用协议 + 路由层"。
 - 远端 IPC 调用可在后续阶段按统一协议落地。
+- UI 层暂不投入，保持简单入口页面即可。
 
 ## 8. 后续扩展建议（供下一阶段）
+**高优先级：**
 - 在 `RemoteAbilityManager` 中实现 IPC 客户端与超时重试机制。
-- 增加能力注册发现机制（本地/远端统一能力目录）。
 - 增加能力调用测试用例（成功、失败、超时、权限不足）。
+
+**中优先级：**
+- 增加能力注册发现机制（本地/远端统一能力目录）。
+- 完善各 Handler 的错误处理与边界情况。
+
+**低优先级：**
+- UI 界面开发与交互优化。
+- 接入 Agent 决策/规划逻辑。
 
 ---
 如果后续代码实现与本文档有冲突，优先同步更新本 `README.md`，保证文档与代码一致。
