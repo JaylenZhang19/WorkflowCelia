@@ -59,6 +59,14 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
   `THOUGHT -> SKILL -> ACTION -> OBSERVATION -> FINAL`。
   页面顶部保留 `Run Test` 按钮，作为鸿蒙能力测试入口，不可移除。
 
+- Agent Runtime 模块（新增，已落地代码）  
+  `entry/src/main/ets/agent/AgentRuntime.ts`  
+  `entry/src/main/ets/agent/SkillRegistry.ts`  
+  `entry/src/main/ets/agent/ToolRegistry.ts`  
+  `entry/src/main/ets/agent/SessionStore.ts`  
+  `entry/src/main/ets/agent/types.ts`  
+  提供最小可运行架构：skill 解析、tool 调用、session 记录、ReAct 步骤事件输出。
+
 ### 2.3 已接入的本地 tools（23 个）
 
 - `CalendarHandler`：3 个（add/delete/query）
@@ -82,14 +90,16 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - ChatPage 已支持用户输入和 ReAct 步骤可视化展示
 - ChatPage 的 `ACTION` 步骤已接入 `GeneralAbilityManager.handleQueryMessage()` 执行 tool 调用
 - `Run Test` 按钮已保留用于鸿蒙能力验证
+- Agent 架构代码已开始实现并接入页面（ChatPage -> AgentRuntime）
 
 ### 3.2 进行中 / 未完成
 
 - `RemoteAbilityManager` 的 IPC 实现（协议映射、超时、重试、错误分层）
-- Agent Runtime（最小版）尚未接入
+- Agent Runtime 目前为最小可运行版本，尚缺模型推理、上下文压缩和容错机制
 - ReAct 流程仍为 Demo 规则驱动，尚未接入真实 LLM 推理
+- Tool 规划目前仍为规则匹配（File/Calendar/Contact），后续需替换为模型驱动 Planner
 
-## 4. 下一阶段：Agent Demo（To-Be，先设计不实现）
+## 4. 下一阶段：Agent Demo（To-Be）
 
 目标：在当前能力层之上，做一个可运行的最小 Agent Demo，验证 `skills + tools`。
 
