@@ -1,8 +1,8 @@
 /**
  * Logger Utility
- * Unified logging utility using HarmonyOS hilog
+ * Unified logging utility across HarmonyOS and Node.js
  */
-import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ProjectContext, detectRuntime, RuntimeEnv } from '../env/ProjectContext';
 
 /**
  * Log levels
@@ -40,6 +40,8 @@ export class Logger {
   private domain: number;
   private prefix: string;
   private minLevel: LogLevel;
+  private adapter: LogAdapter | null = null;
+  private adapterRuntime: RuntimeEnv | null = null;
 
   constructor(config: Partial<LoggerConfig> = {}) {
     const finalConfig = { ...DEFAULT_CONFIG, ...config };
@@ -53,6 +55,28 @@ export class Logger {
    */
   private formatMessage(tag: string, message: string): string {
     return `[${this.prefix}][${tag}] ${message}`;
+  }
+
+  private resolveRuntime(): RuntimeEnv {
+    const ctx = ProjectContext.getInstanceOptional();
+    return ctx?.runtime ?? detectRuntime();
+  }
+
+  private getAdapter(): LogAdapter {
+    const runtime = this.resolveRuntime();
+    if (this.adapter && this.adapterRuntime === runtime) {
+      return this.adapter;
+    }
+    this.adapterRuntime = runtime;
+    if (runtime === 'harmony') {
+      const hilog = tryLoadHilog();
+      if (hilog) {
+        this.adapter = new HilogAdapter(hilog);
+        return this.adapter;
+      }
+    }
+    this.adapter = new ConsoleAdapter();
+    return this.adapter;
   }
 
   /**
@@ -69,7 +93,7 @@ export class Logger {
     if (!this.shouldLog(LogLevel.DEBUG)) return;
     
     const formattedMessage = this.formatMessage(tag, message);
-    hilog.debug(this.domain, tag, formattedMessage, ...args);
+    this.getAdapter().debug(this.domain, tag, formattedMessage, ...args);
   }
 
   /**
@@ -79,7 +103,7 @@ export class Logger {
     if (!this.shouldLog(LogLevel.INFO)) return;
     
     const formattedMessage = this.formatMessage(tag, message);
-    hilog.info(this.domain, tag, formattedMessage, ...args);
+    this.getAdapter().info(this.domain, tag, formattedMessage, ...args);
   }
 
   /**
@@ -89,7 +113,7 @@ export class Logger {
     if (!this.shouldLog(LogLevel.WARN)) return;
     
     const formattedMessage = this.formatMessage(tag, message);
-    hilog.warn(this.domain, tag, formattedMessage, ...args);
+    this.getAdapter().warn(this.domain, tag, formattedMessage, ...args);
   }
 
   /**
@@ -99,7 +123,7 @@ export class Logger {
     if (!this.shouldLog(LogLevel.ERROR)) return;
     
     const formattedMessage = this.formatMessage(tag, message);
-    hilog.error(this.domain, tag, formattedMessage, ...args);
+    this.getAdapter().error(this.domain, tag, formattedMessage, ...args);
   }
 
   /**
@@ -109,8 +133,73 @@ export class Logger {
     if (!this.shouldLog(LogLevel.FATAL)) return;
     
     const formattedMessage = this.formatMessage(tag, message);
-    hilog.fatal(this.domain, tag, formattedMessage, ...args);
+    this.getAdapter().fatal(this.domain, tag, formattedMessage, ...args);
   }
+}
+
+interface LogAdapter {
+  debug(domain: number, tag: string, message: string, ...args: any[]): void;
+  info(domain: number, tag: string, message: string, ...args: any[]): void;
+  warn(domain: number, tag: string, message: string, ...args: any[]): void;
+  error(domain: number, tag: string, message: string, ...args: any[]): void;
+  fatal(domain: number, tag: string, message: string, ...args: any[]): void;
+}
+
+class ConsoleAdapter implements LogAdapter {
+  debug(_domain: number, _tag: string, message: string, ...args: any[]): void {
+    console.debug(message, ...args);
+  }
+  info(_domain: number, _tag: string, message: string, ...args: any[]): void {
+    console.info(message, ...args);
+  }
+  warn(_domain: number, _tag: string, message: string, ...args: any[]): void {
+    console.warn(message, ...args);
+  }
+  error(_domain: number, _tag: string, message: string, ...args: any[]): void {
+    console.error(message, ...args);
+  }
+  fatal(_domain: number, _tag: string, message: string, ...args: any[]): void {
+    console.error(message, ...args);
+  }
+}
+
+class HilogAdapter implements LogAdapter {
+  private hilog: any;
+
+  constructor(hilog: any) {
+    this.hilog = hilog;
+  }
+
+  debug(domain: number, tag: string, message: string, ...args: any[]): void {
+    this.hilog.debug(domain, tag, message, ...args);
+  }
+  info(domain: number, tag: string, message: string, ...args: any[]): void {
+    this.hilog.info(domain, tag, message, ...args);
+  }
+  warn(domain: number, tag: string, message: string, ...args: any[]): void {
+    this.hilog.warn(domain, tag, message, ...args);
+  }
+  error(domain: number, tag: string, message: string, ...args: any[]): void {
+    this.hilog.error(domain, tag, message, ...args);
+  }
+  fatal(domain: number, tag: string, message: string, ...args: any[]): void {
+    this.hilog.fatal(domain, tag, message, ...args);
+  }
+}
+
+function tryLoadHilog(): any | null {
+  try {
+    const g: any = globalThis as any;
+    if (g?.hilog) return g.hilog;
+    const req = g?.require;
+    if (typeof req === 'function') {
+      const kit = req('@kit.PerformanceAnalysisKit');
+      return kit?.hilog ?? null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 /**
