@@ -56,20 +56,21 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - 用户交互主页面  
   `entry/src/main/ets/pages/ChatPage.ets`  
   负责用户输入和 Agent 消息展示。当前已支持 ReAct 可视化步骤输出：
-  `THOUGHT -> SKILL -> ACTION -> OBSERVATION -> FINAL`。
+  `THOUGHT -> SKILL -> ACTION -> OBSERVATION -> FINAL`。  
   页面顶部保留 `Run Test` 按钮，作为鸿蒙能力测试入口，不可移除。
 
-- Agent Runtime 模块（新增，已落地代码）  
-  `entry/src/main/ets/agent/AgentRuntime.ts`  
-  `entry/src/main/ets/agent/SkillRegistry.ts`  
-  `entry/src/main/ets/agent/SkillSpec.ts`  
-  `entry/src/main/ets/agent/LlmPlanner.ts`  
-  `entry/src/main/ets/agent/LlmClient.ts`  
-  `entry/src/main/ets/agent/AgentConfig.ts`  
-  `entry/src/main/ets/agent/ToolRegistry.ts`  
-  `entry/src/main/ets/agent/SessionStore.ts`  
-  `entry/src/main/ets/agent/types.ts`  
-  提供最小可运行架构：skill 解析、LLM 规划、tool 调用、session 记录、ReAct 步骤事件输出。
+- Agent Runtime 模块（逐步落地中）  
+  以 `entry/src/main/ets/agent/` 为主目录，包含最小可运行结构：
+  `SkillLoader`、`ToolsManager`、`LocalAgent` 等。
+
+- 运行环境与配置上下文  
+  `entry/src/main/ets/env/ProjectContext.ts`  
+  `entry/src/main/ets/env/HarmonyProjectContext.ts`  
+  负责运行环境判断与模型配置初始化（Harmony/Node 统一入口）。
+
+- 双端日志适配  
+  `entry/src/main/ets/utils/Logger.ts`  
+  logger 内部根据 `ProjectContext` 选择 Harmony hilog 或 Node console。
 
 ### 2.3 已接入的本地 tools（23 个）
 
@@ -83,9 +84,44 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 
 合计：`7` 个 Handler，`23` 个本地工具能力。
 
-## 3. 当前进度（Progress）
+## 3. 双端运行（HarmonyOS + Node.js）
 
-### 3.1 已完成
+目标：同一套 TS 业务逻辑既能在鸿蒙真机运行，也能在 Node.js 环境用于评测。
+
+### 3.1 HarmonyOS 入口
+
+- 入口文件：`entry/src/main/ets/entryability/EntryAbility.ts`
+- 初始化上下文：`initProjectContextForHarmony(this.context)`
+- 配置来源：`entry/src/main/resources/rawfile/app_config.json`
+
+### 3.2 Node.js 入口
+
+- 入口文件：`node-entry.ts`
+- 配置来源：默认 `process.cwd()/app_config.json`
+- 也可通过 `WORKFLOW_CELIA_CONFIG` 指定配置文件路径
+
+### 3.3 配置格式
+
+`app_config.json` 示例：
+```json
+{
+  "model": {
+    "apiKey": "",
+    "apiUrl": "http://127.0.0.1:11435/v1/chat/completions",
+    "modelName": "Qwen2-72B-Instruct-GPTQ-Int4"
+  }
+}
+```
+
+### 3.4 LLM 配置生效点
+
+- `entry/src/main/ets/LlmClient.ts`
+- 从 `ProjectContext` 读取 `apiKey/apiUrl/modelName`
+- 若未初始化上下文则沿用默认值
+
+## 4. 当前进度（Progress）
+
+### 4.1 已完成
 
 - 统一调用协议：`QueryMessage` / `InvokeResult`
 - 本地能力路由和分发框架
@@ -94,55 +130,15 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - ChatPage 已支持用户输入和 ReAct 步骤可视化展示
 - ChatPage 的 `ACTION` 步骤已接入 `GeneralAbilityManager.handleQueryMessage()` 执行 tool 调用
 - `Run Test` 按钮已保留用于鸿蒙能力验证
-- Agent 架构代码已开始实现并接入页面（ChatPage -> AgentRuntime）
-- LLM Planner 已接入两阶段流程：Skill metadata Discovery -> Skill instructions Activation -> Tool planning
-- Skill 定义已按 `SKILL.md` 规范解析（frontmatter `name`/`description`/`allowed-tools`）
+- 初步 Agent 运行结构接入（`agent/` 目录）
+- 运行环境上下文与双端日志适配
+- Node.js 入口可初始化上下文，支持评测流程
 
-### 3.2 进行中 / 未完成
+### 4.2 进行中 / 未完成
 
 - `RemoteAbilityManager` 的 IPC 实现（协议映射、超时、重试、错误分层）
-- Agent Runtime 目前为最小可运行版本，尚缺模型推理、上下文压缩和容错机制
-- 默认 LLM 配置为关闭（`AgentConfig.ts`），需填入 API Key 并开启后才会走真实网络规划
-- 当前保留规则兜底 Planner（当 LLM 不可用或返回异常时自动回退）
-
-## 4. 下一阶段：Agent Demo（To-Be）
-
-目标：在当前能力层之上，做一个可运行的最小 Agent Demo，验证 `skills + tools`。
-
-### 4.1 最小闭环
-
-1. 用户输入
-2. Skill 选择（规则匹配即可）
-3. 生成工具调用计划（可先由模板/规则生成）
-4. 调用已有 tool（走 `GeneralAbilityManager`）
-5. 汇总结果并输出
-
-### 4.2 最小新增模块（计划）
-
-- `AgentRuntime`：负责主流程编排
-- `SkillRegistry`：维护 skill 定义、触发条件、可用工具白名单
-- `ToolRegistry`：对现有能力层做标准化适配
-- `SessionStore`：保留最近 N 轮上下文（先本地内存）
-
-说明：以上是下一阶段文档约束，不代表当前代码已实现。
-
-### 4.3 Skill 建议结构
-
-- `id`
-- `name`
-- `description`
-- `when_to_use`
-- `instructions`
-- `allowed_tools`
-
-### 4.4 Demo 验收标准（最小）
-
-- 至少 2 个 skill 可被触发
-- 每个 skill 至少调用 1 个实际 tool
-- 返回统一 `InvokeResult` 风格结果（错误场景也一致）
-- 全链路可在日志中追踪（请求、路由、执行、返回）
-- ChatPage 可见每一步 ReAct 状态与结果（Thought/Skill/Action/Observation/Final）
-- 保留并可用 `Run Test` 按钮
+- Agent Runtime 仍为最小版本，缺上下文压缩和容错机制
+- Node 侧尚未完成对所有 `@ohos` 依赖的完整替换/适配层
 
 ## 5. 编码注意事项（必须遵守）
 
@@ -178,6 +174,7 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 - `name` 需满足：1-64 字符、小写字母数字和连字符、与目录名一致
 - `allowed-tools` 用于工具白名单约束，Agent 执行前必须校验
 - 运行时遵循 progressive disclosure：先看 metadata，再激活并读取完整指令
+
 ### 5.6 新增能力流程
 
 1. 在 `LocalCapabilityConfig.ts` 增加能力元数据
@@ -199,29 +196,22 @@ WorkflowCelia 是一个基于 HarmonyOS（ArkTS）的 Agent 工程。
 
 ### 5.9 兼容与稳定性
 
-- 任何新增字段优先“向后兼容”，不要破坏已存在调用方
-- 公共类型改动需同步更新文档与调用点
+- 新增 Node 运行路径时，不得引入 `@ohos` 依赖到 Node 代码路径
+- Harmony 与 Node 逻辑要共享同一套核心 TypeScript 代码
 
-## 6. 开发边界
+## 6. 给 Codex/AI 的说明（下次重开 session 必读）
 
-当前阶段默认边界如下：
-- 不实现复杂推理、多模型轮换、长链路自治
-- 不引入重型依赖做“伪智能”
-- 优先稳固：协议、路由、工具可用性、错误可观测性
+你必须先阅读本 README，再进行任何改动。关键上下文如下：
 
-## 7. 里程碑建议
+- 本项目是 HarmonyOS + Node.js 双端可运行的 Agent 框架，用于评测模型和 skill 能力。
+- 双端入口已存在：
+  - Harmony：`entry/src/main/ets/entryability/EntryAbility.ts` 初始化 `ProjectContext`
+  - Node：`node-entry.ts` 初始化 `ProjectContext`
+- 运行环境判断和配置读取由 `entry/src/main/ets/env/ProjectContext.ts` 统一管理。
+- LLM 调用从 `ProjectContext` 读取 `apiKey/apiUrl/modelName`。
+- logger 已支持 Harmony/Node 自适配，外部不得感知环境。
 
-### M1（当前）
-- 稳定现有 23 个 tools
-- 补齐 Remote IPC 设计与最小实现草图
-
-### M2（下一步）
-- 引入最小 `SkillRegistry + AgentRuntime`（规则驱动）
-- 打通 2 个 skill 的端到端演示链路
-
-### M3（后续）
-- 增加会话管理、权限控制、可观测性完善
-- 逐步替换规则驱动为模型驱动
-
----
-最后更新：2026-03-05（LLM Planner + Skill 规范解析已接入）
+请遵守：
+- 任何与架构冲突的改动，必须先更新本 README。
+- 保持 TypeScript 逻辑可在两端复用，不在 Node 路径引入 `@ohos` 依赖。
+- ChatPage 的 `Run Test` 按钮不可移除。
