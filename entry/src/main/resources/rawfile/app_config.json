@@ -1,0 +1,7 @@
+{
+  "model": {
+    "apiKey": "",
+    "apiUrl": "http://127.0.0.1:11435/v1/chat/completions",
+    "modelName": "Qwen2-72B-Instruct-GPTQ-Int4"
+  }
+}

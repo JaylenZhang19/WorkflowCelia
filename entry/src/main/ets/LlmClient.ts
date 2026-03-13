@@ -1,6 +1,7 @@
 import { http } from '@kit.NetworkKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { logger } from './utils';
+import { ProjectContext } from './env/ProjectContext';
 
 /**
  * 推理配置选项
@@ -32,12 +33,42 @@ const TAG = 'LLMClient';
 export class LLMClient {
   private host: string = "http://10.137.62.162:11435";
   private model: string = "Qwen2-72B-Instruct-GPTQ-Int4";
+  private apiKey: string = "";
+  private apiUrl: string = "";
   private defaultOptions: VllmOptions = {
     max_tokens: 4096,
     temperature: 0.7,
     logprobs: true,
     top_logprobs: 1
   };
+
+  private applyContextConfig(): void {
+    const ctx = ProjectContext.getInstanceOptional();
+    if (!ctx) return;
+    const cfg = ctx.config.model;
+    if (cfg.apiKey) this.apiKey = cfg.apiKey;
+    if (cfg.apiUrl) this.apiUrl = cfg.apiUrl;
+    if (cfg.modelName) this.model = cfg.modelName;
+  }
+
+  private normalizeApiUrl(apiUrl: string): string {
+    if (apiUrl.endsWith('/v1/chat/completions')) return apiUrl;
+    return apiUrl.replace(/\/$/, '') + '/v1/chat/completions';
+  }
+
+  private resolveRequestTarget(model: string): { url: string; apiKey: string } {
+    const hasApiUrl = this.apiUrl && this.apiUrl.length > 0;
+    if (model.includes('doubao')) {
+      const url = hasApiUrl ? this.apiUrl : 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
+      const key = this.apiKey || 'YOUR_ARK_KEY';
+      return { url, apiKey: key };
+    }
+
+    if (hasApiUrl) {
+      return { url: this.normalizeApiUrl(this.apiUrl), apiKey: this.apiKey || 'no-key-needed' };
+    }
+    return { url: `${this.host}/v1/chat/completions`, apiKey: this.apiKey || 'no-key-needed' };
+  }
 
   /**
    * 计算困惑度 (Perplexity)
@@ -111,15 +142,11 @@ export class LLMClient {
     tools: Array<any> | null = null,
     modelOverride?: string
   ): Promise<ChatResponse> {
+    this.applyContextConfig();
     const model = modelOverride || this.model;
+    const target = this.resolveRequestTarget(model);
 
-    // 根据模型名选择不同的路由（模拟 Python 中的 chat_with_doubao 等）
-    if (model.includes('doubao')) {
-      return this.requestHttp("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "YOUR_ARK_KEY", model, messages, tools);
-    }
-
-    // 默认走 vLLM 宿主地址
-    return this.requestHttp(`${this.host}/v1/chat/completions`, "no-key-needed", model, messages, tools);
+    return this.requestHttp(target.url, target.apiKey, model, messages, tools);
   }
 
   /**

@@ -4,6 +4,7 @@ import { logger } from '../utils/Logger';
 import { common } from '@kit.AbilityKit';
 import { QueryMessage } from '../abilityprovider/AbilityTypes';
 import { GeneralAbilityManager } from '../abilityprovider/GeneralAbilityManager';
+import { initProjectContextForHarmony } from '../env/HarmonyProjectContext';
 
 const TAG = 'EntryAbility';
 
@@ -25,6 +26,7 @@ export default class EntryAbility extends UIAbility {
     logger.info(TAG, 'Ability onCreate');
     globalContext = this.context;
     EntryAbility.instance = this;
+    await initProjectContextForHarmony(this.context);
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
     } catch (err) {
