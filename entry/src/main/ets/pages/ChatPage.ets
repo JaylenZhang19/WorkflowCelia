@@ -1,7 +1,5 @@
 import { logger } from '../utils/Logger';
-import { AgentRuntime } from '../agent/AgentRuntime';
-import { DEFAULT_LLM_CONFIG } from '../agent/AgentConfig';
-import { AgentStepEvent, ReActStepType } from '../agent/types';
+
 import { testFunc } from '../entryability/EntryAbility';
 
 const TAG: string = 'ChatPage';
@@ -11,7 +9,7 @@ interface Message {
   content: string;
   role: 'user' | 'agent';
   timestamp: number;
-  stepType?: ReActStepType;
+  // stepType?: ReActStepType;
 }
 
 @Entry
@@ -22,11 +20,11 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State scrollToBottom: number = 0;
   private scroller: Scroller = new Scroller();
-  private readonly agentRuntime: AgentRuntime = new AgentRuntime({
-    config: {
-      llm: DEFAULT_LLM_CONFIG
-    }
-  });
+  // private readonly agentRuntime: AgentRuntime = new AgentRuntime({
+  //   config: {
+  //     llm: DEFAULT_LLM_CONFIG
+  //   }
+  // });
 
   aboutToAppear() {
     this.messages.push({
@@ -69,13 +67,13 @@ struct ChatPage {
       await this.runReactFlow(input);
     } catch (error) {
       logger.error(TAG, `Failed to process input: ${JSON.stringify(error)}`);
-      this.messages.push({
-        id: this.generateId(),
-        content: 'Final Answer\nSorry, I encountered an error. Please try again.',
-        role: 'agent',
-        timestamp: Date.now(),
-        stepType: 'final'
-      });
+      // this.messages.push({
+      //   id: this.generateId(),
+      //   content: 'Final Answer\nSorry, I encountered an error. Please try again.',
+      //   role: 'agent',
+      //   timestamp: Date.now(),
+      //   stepType: 'final'
+      // });
       this.scrollToBottom++;
     } finally {
       this.isSending = false;
@@ -83,26 +81,26 @@ struct ChatPage {
   }
 
   private async runReactFlow(input: string): Promise<void> {
-    await this.agentRuntime.runTurn(
-      { sessionId: 'chat-main', input },
-      {
-        onStep: (step: AgentStepEvent) => {
-          this.appendAgentStep(step);
-        }
-      }
-    );
+    // await this.agentRuntime.runTurn(
+    //   { sessionId: 'chat-main', input },
+    //   {
+    //     onStep: (step: AgentStepEvent) => {
+    //       this.appendAgentStep(step);
+    //     }
+    //   }
+    // );
   }
-
-  private appendAgentStep(step: AgentStepEvent): void {
-    this.messages.push({
-      id: this.generateId(),
-      content: `${step.title}\n${step.content}`,
-      role: 'agent',
-      timestamp: step.timestamp,
-      stepType: step.type
-    });
-    this.scrollToBottom++;
-  }
+  //
+  // private appendAgentStep(step: AgentStepEvent): void {
+  //   this.messages.push({
+  //     id: this.generateId(),
+  //     content: `${step.title}\n${step.content}`,
+  //     role: 'agent',
+  //     timestamp: step.timestamp,
+  //     stepType: step.type
+  //   });
+  //   this.scrollToBottom++;
+  // }
 
   runTest() {
     logger.info(TAG, 'Test button clicked, running test function');
@@ -203,16 +201,16 @@ struct ChatPage {
   @Builder
   MessageBubble(message: Message, bgColor: string, textColor: string) {
     Column() {
-      if (message.role === 'agent' && message.stepType) {
-        Text(this.getStepTitle(message.stepType))
-          .fontSize(11)
-          .fontColor('#4A4A4A')
-          .fontWeight(FontWeight.Medium)
-          .backgroundColor('#D1D1D6')
-          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-          .borderRadius(8)
-          .margin({ bottom: 6 })
-      }
+      // if (message.role === 'agent' && message.stepType) {
+      //   Text(this.getStepTitle(message.stepType))
+      //     .fontSize(11)
+      //     .fontColor('#4A4A4A')
+      //     .fontWeight(FontWeight.Medium)
+      //     .backgroundColor('#D1D1D6')
+      //     .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+      //     .borderRadius(8)
+      //     .margin({ bottom: 6 })
+      // }
 
       Text(message.content)
         .fontSize(16)
@@ -235,19 +233,19 @@ struct ChatPage {
     return `${hours}:${minutes}`;
   }
 
-  getStepTitle(stepType: ReActStepType): string {
-    if (stepType === 'thought') {
-      return 'THOUGHT';
-    }
-    if (stepType === 'skill') {
-      return 'SKILL';
-    }
-    if (stepType === 'action') {
-      return 'ACTION';
-    }
-    if (stepType === 'observation') {
-      return 'OBSERVATION';
-    }
-    return 'FINAL';
-  }
+  // getStepTitle(stepType: ReActStepType): string {
+  //   if (stepType === 'thought') {
+  //     return 'THOUGHT';
+  //   }
+  //   if (stepType === 'skill') {
+  //     return 'SKILL';
+  //   }
+  //   if (stepType === 'action') {
+  //     return 'ACTION';
+  //   }
+  //   if (stepType === 'observation') {
+  //     return 'OBSERVATION';
+  //   }
+  //   return 'FINAL';
+  // }
 }
