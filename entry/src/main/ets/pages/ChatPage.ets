@@ -1,6 +1,7 @@
 import { logger } from '../utils/Logger';
-
 import { testFunc } from '../entryability/EntryAbility';
+import { LocalAgent } from '../agent/LocalAgent';
+import { AgentStepEvent, AgentStepType } from '../agent/types';
 
 const TAG: string = 'ChatPage';
 
@@ -9,7 +10,7 @@ interface Message {
   content: string;
   role: 'user' | 'agent';
   timestamp: number;
-  // stepType?: ReActStepType;
+  stepType?: AgentStepEvent;
 }
 
 @Entry
@@ -20,18 +21,12 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State scrollToBottom: number = 0;
   private scroller: Scroller = new Scroller();
-  // private readonly agentRuntime: AgentRuntime = new AgentRuntime({
-  //   config: {
-  //     llm: DEFAULT_LLM_CONFIG
-  //   }
-  // });
+  private localAgent: LocalAgent = new LocalAgent(this.getUIContext().getHostContext()?.filesDir ?? '')
 
   aboutToAppear() {
     this.messages.push({
       id: this.generateId(),
-      content:
-        'Hello! I am WorkflowCelia Agent.\n' +
-        'ReAct steps are now shown in this page: THOUGHT -> SKILL -> ACTION -> OBSERVATION -> FINAL.',
+      content: 'Hello! 我是 WorkflowCelia 原生 Agent，已直接连接 Core 层。',
       role: 'agent',
       timestamp: Date.now()
     });
@@ -57,50 +52,37 @@ struct ChatPage {
     const userInput = this.inputText.trim();
     this.inputText = '';
     this.isSending = true;
-    this.scrollToBottom++;
-
-    void this.processUserInput(userInput);
+    this.processUserInput(userInput);
   }
 
   async processUserInput(input: string) {
     try {
-      await this.runReactFlow(input);
+      await this.localAgent.run(input, (step: AgentStepEvent) => {
+        this.appendAgentStep(step);
+      });
     } catch (error) {
       logger.error(TAG, `Failed to process input: ${JSON.stringify(error)}`);
-      // this.messages.push({
-      //   id: this.generateId(),
-      //   content: 'Final Answer\nSorry, I encountered an error. Please try again.',
-      //   role: 'agent',
-      //   timestamp: Date.now(),
-      //   stepType: 'final'
-      // });
-      this.scrollToBottom++;
+      this.appendAgentStep({
+        type: 'final',
+        title: '错误',
+        content: '抱歉，执行过程中出现了异常。',
+        timestamp: Date.now()
+      });
     } finally {
       this.isSending = false;
     }
   }
 
-  private async runReactFlow(input: string): Promise<void> {
-    // await this.agentRuntime.runTurn(
-    //   { sessionId: 'chat-main', input },
-    //   {
-    //     onStep: (step: AgentStepEvent) => {
-    //       this.appendAgentStep(step);
-    //     }
-    //   }
-    // );
+  private appendAgentStep(step: AgentStepEvent): void {
+    this.messages.push({
+      id: this.generateId(),
+      content: `【${step.title}】\n${step.content}`,
+      role: 'agent',
+      timestamp: step.timestamp,
+      stepType: step
+    });
+    this.scroller.scrollEdge(Edge.Bottom);
   }
-  //
-  // private appendAgentStep(step: AgentStepEvent): void {
-  //   this.messages.push({
-  //     id: this.generateId(),
-  //     content: `${step.title}\n${step.content}`,
-  //     role: 'agent',
-  //     timestamp: step.timestamp,
-  //     stepType: step.type
-  //   });
-  //   this.scrollToBottom++;
-  // }
 
   runTest() {
     logger.info(TAG, 'Test button clicked, running test function');
@@ -201,16 +183,16 @@ struct ChatPage {
   @Builder
   MessageBubble(message: Message, bgColor: string, textColor: string) {
     Column() {
-      // if (message.role === 'agent' && message.stepType) {
-      //   Text(this.getStepTitle(message.stepType))
-      //     .fontSize(11)
-      //     .fontColor('#4A4A4A')
-      //     .fontWeight(FontWeight.Medium)
-      //     .backgroundColor('#D1D1D6')
-      //     .padding({ left: 8, right: 8, top: 2, bottom: 2 })
-      //     .borderRadius(8)
-      //     .margin({ bottom: 6 })
-      // }
+      if (message.role === 'agent' && message.stepType) {
+        Text(this.getStepTitle(message.stepType.type))
+          .fontSize(11)
+          .fontColor('#4A4A4A')
+          .fontWeight(FontWeight.Medium)
+          .backgroundColor('#D1D1D6')
+          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .borderRadius(8)
+          .margin({ bottom: 6 })
+      }
 
       Text(message.content)
         .fontSize(16)
@@ -233,19 +215,19 @@ struct ChatPage {
     return `${hours}:${minutes}`;
   }
 
-  // getStepTitle(stepType: ReActStepType): string {
-  //   if (stepType === 'thought') {
-  //     return 'THOUGHT';
-  //   }
-  //   if (stepType === 'skill') {
-  //     return 'SKILL';
-  //   }
-  //   if (stepType === 'action') {
-  //     return 'ACTION';
-  //   }
-  //   if (stepType === 'observation') {
-  //     return 'OBSERVATION';
-  //   }
-  //   return 'FINAL';
-  // }
+  getStepTitle(stepType: AgentStepType): string {
+    if (stepType === 'thought') {
+      return 'THOUGHT';
+    }
+    if (stepType === 'skill') {
+      return 'SKILL';
+    }
+    if (stepType === 'action') {
+      return 'ACTION';
+    }
+    if (stepType === 'observation') {
+      return 'OBSERVATION';
+    }
+    return 'FINAL';
+  }
 }

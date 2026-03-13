@@ -1,4 +1,8 @@
 import fs from '@ohos.file.fs';
+import { ChatResponse, llmClient } from '../LlmClient';
+import { SkillLoader } from './SkillLoader';
+import { ToolsManager } from './ToolsManager';
+import { AgentStepEvent } from './types';
 
 // 模拟 Python 的截断函数
 function truncate(content: string, maxLength: number = 800): string {
@@ -20,21 +24,16 @@ export class LocalAgent {
   private skillsDir: string;
   private apiModel: string;
   private workspace: string;
-  private skillLoader: any; // 需对接您的 SkillLoader TS 版
-  private toolsManager: any; // 需对接您的 ToolsManager TS 版
+  private skillLoader: SkillLoader;
+  private toolsManager: ToolsManager;
 
-  constructor(
-    skillsDir: string = "rawfile/skills",
-    apiModel: string = "qwen-2.5-72B",
-    context: any // 鸿蒙的 Context 用于获取沙箱路径
-  ) {
-    this.skillsDir = skillsDir;
+  constructor(workspace: string, apiModel: string = "qwen-2.5-72B") {
     this.apiModel = apiModel;
-    this.workspace = context.filesDir; // 鸿蒙沙箱起始目录
+    this.workspace = workspace;
+    this.skillsDir = workspace + '/skills'
 
-    // 初始化组件 (此处假设您已有对应的 TS 类)
-    // this.skillLoader = new SkillLoader(skillsDir);
-    // this.toolsManager = new ToolsManager(this.workspace);
+    this.skillLoader = new SkillLoader(this.skillsDir);
+    this.toolsManager = new ToolsManager(this.workspace);
 
     this.initSystemPrompt();
     console.info(`使用 ${apiModel} 作为 API 模型`);
@@ -48,8 +47,7 @@ export class LocalAgent {
   }
 
   private buildSystemPrompt(): string {
-    // 这里的逻辑与您之前要求的鸿蒙版 Prompt 一致
-    const skillMetadata = ""; // 从 skillLoader 获取
+    const skillMetadata = this.skillLoader.getMetadataSummary();
     return `你是一个强大的 HarmonyOS 智能助手。
 【环境信息】
 - 工作目录：${this.workspace}
@@ -58,7 +56,7 @@ export class LocalAgent {
 ★ 重要：任务完成必须调用 finish 工具。`;
   }
 
-  public async run(userInput: string, maxSteps: number = 20): Promise<string> {
+  public async run(userInput: string, onStep?: (step: AgentStepEvent) => void, maxSteps: number = 20): Promise<string> {
     console.info(`NEW TASK: ${userInput}`);
 
     const currentTime = new Date().toLocaleString();
@@ -71,11 +69,23 @@ export class LocalAgent {
 
     for (let step = 1; step <= maxSteps; step++) {
       console.info(`🔄 Step ${step} (Thinking)...`);
+      onStep?.({
+        type: 'thought',
+        title: `Step ${step}: 思考中`,
+        content: "正在分析用户请求并规划步骤...",
+        timestamp: Date.now()
+      });
+      const toolSchemas = this.toolsManager.getToolSchemas();
+      const response: ChatResponse= await llmClient.chatCompletion(history, toolSchemas);
 
-      // 调用 LLM (此处需对接您的鸿蒙版网络请求)
-      // const toolSchemas = this.toolsManager.getToolSchemas();
-      // const response = await chatWithLlmWithTools(history, this.apiModel, toolSchemas);
-      const response: any = {}; // 模拟响应
+      if (response.content) {
+        onStep?.({
+          type: 'thought',
+          title: `Step ${step}: 逻辑分析`,
+          content: response.content,
+          timestamp: Date.now()
+        });
+      }
 
       const toolCalls = response.tool_calls;
 
@@ -89,9 +99,22 @@ export class LocalAgent {
 
         for (const tc of toolCalls) {
           console.info(`  🔧 Tool: ${tc.name}(${JSON.stringify(tc.arguments)})`);
+          onStep?.({
+            type: 'action',
+            title: `调用工具: ${tc.name}`,
+            content: `输入参数: ${JSON.stringify(tc.arguments)}`,
+            timestamp: Date.now()
+          });
 
           // 执行工具
           const result = await this.toolsManager.executeTool(tc.name, tc.arguments);
+
+          onStep?.({
+            type: 'observation',
+            title: `工具返回结果 (${tc.name})`,
+            content: result.length > 500 ? result.substring(0, 500) + "..." : result,
+            timestamp: Date.now()
+          });
 
           history.push({
             role: "tool",
@@ -103,6 +126,13 @@ export class LocalAgent {
           if (tc.name === "finish") {
             const finalResult = String(result);
             console.info(`🤖 Agent: ${finalResult}`);
+
+            onStep?.({
+              type: 'final',
+              title: `任务完成`,
+              content: finalResult,
+              timestamp: Date.now()
+            });
 
             // 更新长时记忆
             this.conversationHistory.push(...history.slice(initialHistoryLen));
@@ -124,6 +154,12 @@ export class LocalAgent {
     }
 
     this.conversationHistory.push(...history.slice(initialHistoryLen));
+    onStep?.({
+      type: 'final',
+      title: `任务超时`,
+      content: '超过最大步数限制',
+      timestamp: Date.now()
+    });
     return "❌ 任务超时：超过最大步数限制。";
   }
 
