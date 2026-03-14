@@ -3,3 +3,5 @@
  * Export all utility modules
  */
 export * from './Logger';
+export * from './FileUtil';
+export * from './FileUtilAdapter';

@@ -1,6 +1,6 @@
-import fs from '@ohos.file.fs';
 import { ProjectContext } from '../env';
 import { llmClient } from './LlmClient';
+import { FileUtil } from '../utils/FileUtil';
 import { logger } from '../utils/Logger';
 import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';
@@ -186,7 +186,7 @@ ${skillMetadata}
 
             // 更新长时记忆
             this.conversationHistory.push(...history.slice(initialHistoryLen));
-            this.saveLogs(history);
+            await this.saveLogs(history);
             return finalResult;
           }
         }
@@ -205,7 +205,7 @@ ${skillMetadata}
         });
       }
     }
-    this.saveLogs(history);
+    await this.saveLogs(history);
     this.conversationHistory.push(...history.slice(initialHistoryLen));
     onStep?.({
       type: 'final',
@@ -216,16 +216,13 @@ ${skillMetadata}
     return "❌ 任务超时：超过最大步数限制。";
   }
 
-  private saveLogs(history: Message[]): void {
-    // 鸿蒙文件写入示例
+  private async saveLogs(history: Message[]): Promise<void> {
     const logPath = `${this.workspace}/messages.json`;
     try {
-      let file = fs.openSync(logPath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE | fs.OpenMode.TRUNC);
-      fs.writeSync(file.fd, JSON.stringify(history, null, 2));
-      logger.info(TAG, `saveLogs, 日志写入成功 logPath: ${logPath}`)
-      fs.closeSync(file);
+      await FileUtil.writeTextFile(logPath, JSON.stringify(history, null, 2));
+      logger.info(TAG, `saveLogs, 日志写入成功 logPath: ${logPath}`);
     } catch (e) {
-      logger.error(TAG, "保存日志失败");
+      logger.error(TAG, `保存日志失败: ${JSON.stringify(e)}`);
     }
   }
 }

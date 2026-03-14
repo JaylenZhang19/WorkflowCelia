@@ -1,6 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { ProjectContext, ProjectConfig } from './entry/src/main/ets/env/ProjectContext';
+import fs from 'node:fs';
+import path from 'node:path';
+import { ProjectContext } from './entry/src/main/ets/env/ProjectContext.ts';
+import type { ProjectConfig } from './entry/src/main/ets/env/ProjectContext.ts';
 
 function readConfigFile(filePath: string): Partial<ProjectConfig> | null {
   try {
@@ -15,10 +16,11 @@ function resolveConfigPath(): string {
   if (process.env.WORKFLOW_CELIA_CONFIG) {
     return path.resolve(process.env.WORKFLOW_CELIA_CONFIG);
   }
-  return path.resolve(process.cwd(), 'app_config.json');
+  return path.resolve(process.cwd(), 'entry/src/main/resources/rawfile/app_config.json');
 }
 
 const configPath = resolveConfigPath();
+console.log(`configPath: ${configPath}`);
 const fileConfig = readConfigFile(configPath);
 
 ProjectContext.init({
