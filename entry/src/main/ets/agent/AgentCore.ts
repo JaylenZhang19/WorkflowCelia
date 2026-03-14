@@ -1,6 +1,6 @@
 import fs from '@ohos.file.fs';
 import { ProjectContext } from '../env';
-import { llmClient } from '../LlmClient';
+import { llmClient } from './LlmClient';
 import { logger } from '../utils/Logger';
 import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';

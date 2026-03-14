@@ -1,50 +1,17 @@
 import { http } from '@kit.NetworkKit';
-import { logger } from './utils';
-import { ProjectContext } from './env/ProjectContext';
-import { ChatResponse, Message, ToolCallRequest, VllmOptions } from './agent/types';
+import { logger } from '../utils';
+import { ModelConfig, ProjectContext } from '../env/ProjectContext';
+import { ChatResponse, Message, ToolCallRequest, VllmOptions } from './types';
 
 const TAG = 'LLMClient';
 
 export class LLMClient {
-  private host: string = "http://10.137.62.162:11435";
-  private model: string = "Qwen2-72B-Instruct-GPTQ-Int4";
-  private apiKey: string = "";
-  private apiUrl: string = "";
-
   private defaultOptions: VllmOptions = {
     max_tokens: 4096,
     temperature: 0.7,
     logprobs: true,
     top_logprobs: 1
   };
-
-  private applyContextConfig(): void {
-    const ctx = ProjectContext.getInstanceOptional();
-    if (!ctx) return;
-    const cfg = ctx.config.model;
-    if (cfg.apiKey) this.apiKey = cfg.apiKey;
-    if (cfg.apiUrl) this.apiUrl = cfg.apiUrl;
-    if (cfg.modelName) this.model = cfg.modelName;
-  }
-
-  private normalizeApiUrl(apiUrl: string): string {
-    if (apiUrl.endsWith('/v1/chat/completions')) return apiUrl;
-    return apiUrl.replace(/\/$/, '') + '/v1/chat/completions';
-  }
-
-  private resolveRequestTarget(model: string): { url: string; apiKey: string } {
-    const hasApiUrl = this.apiUrl && this.apiUrl.length > 0;
-    if (model.includes('doubao')) {
-      const url = hasApiUrl ? this.apiUrl : 'https://ark.cn-beijing.volces.com/api/v3/chat/completions';
-      const key = this.apiKey || 'YOUR_ARK_KEY';
-      return { url, apiKey: key };
-    }
-
-    if (hasApiUrl) {
-      return { url: this.normalizeApiUrl(this.apiUrl), apiKey: this.apiKey || 'no-key-needed' };
-    }
-    return { url: `${this.host}/v1/chat/completions`, apiKey: this.apiKey || 'no-key-needed' };
-  }
 
   /**
    * 计算困惑度 (Perplexity)
@@ -114,16 +81,13 @@ export class LLMClient {
   /**
    * 统一聊天接口
    */
-  async chatCompletion(
-    messages: Message[],
-    tools: Array<any> | null = null,
-    modelOverride?: string
-  ): Promise<ChatResponse> {
-    this.applyContextConfig();
-    const model = modelOverride || this.model;
-    const target = this.resolveRequestTarget(model);
-
-    return this.requestHttp(target.url, target.apiKey, model, messages, tools);
+  async chatCompletion(messages: Message[], tools: Array<any> | null = null): Promise<ChatResponse> {
+    if (!ProjectContext.getInstance()) {
+      logger.error(TAG, 'ProjectContext instance is undefined');
+      return;
+    }
+    const modelConfig: ModelConfig = ProjectContext.getInstance().config.model;
+    return this.requestHttp(modelConfig.apiUrl, modelConfig.apiKey, modelConfig.modelName, messages, tools);
   }
 
   /**
