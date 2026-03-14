@@ -1,7 +1,7 @@
 import { logger } from '../utils/Logger';
-import { testFunc } from '../entryability/EntryAbility';
-import { LocalAgent } from '../agent/LocalAgent';
+import { AgentCore } from '../agent/AgentCore';
 import { AgentStepEvent, AgentStepType } from '../agent/types';
+import EntryAbility from '../entryability/EntryAbility';
 
 const TAG: string = 'ChatPage';
 
@@ -21,7 +21,7 @@ struct ChatPage {
   @State isSending: boolean = false;
   @State scrollToBottom: number = 0;
   private scroller: Scroller = new Scroller();
-  private localAgent: LocalAgent = new LocalAgent(this.getUIContext().getHostContext()?.filesDir ?? '')
+  private localAgent: AgentCore = new AgentCore(this.getUIContext().getHostContext()?.filesDir ?? '')
 
   aboutToAppear() {
     this.messages.push({
@@ -86,7 +86,7 @@ struct ChatPage {
 
   runTest() {
     logger.info(TAG, 'Test button clicked, running test function');
-    testFunc().catch((error: Error) => {
+    EntryAbility.getInstance()?.test().catch((error: Error) => {
       logger.error(TAG, `Test execution failed: ${JSON.stringify(error)}`);
     });
   }

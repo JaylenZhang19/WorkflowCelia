@@ -32,10 +32,6 @@ export default class EntryAbility extends UIAbility {
     } catch (err) {
       logger.error(TAG, `Failed to set colorMode. Cause: ${JSON.stringify(err)}`);
     }
-
-    this.test().catch((error: Error) => {
-      logger.error(TAG, `camera->mail demo error: ${JSON.stringify(error)}`);
-    });
   }
 
   public async test() {

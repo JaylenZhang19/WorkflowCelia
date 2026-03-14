@@ -1,8 +1,8 @@
 import fs from '@ohos.file.fs';
-import { ChatResponse, llmClient } from '../LlmClient';
+import { llmClient } from '../LlmClient';
 import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';
-import { AgentStepEvent } from './types';
+import { AgentStepEvent, ChatResponse, Message } from './types';
 
 // 模拟 Python 的截断函数
 function truncate(content: string, maxLength: number = 800): string {
@@ -11,15 +11,7 @@ function truncate(content: string, maxLength: number = 800): string {
   return `${content.substring(0, half)}\n... [已省略中间 ${content.length - maxLength} 字符] ...\n${content.substring(content.length - half)}`;
 }
 
-interface Message {
-  role: string;
-  content: string;
-  tool_calls?: any[];
-  tool_call_id?: string;
-  name?: string;
-}
-
-export class LocalAgent {
+export class AgentCore {
   private conversationHistory: Message[] = [];
   private skillsDir: string;
   private apiModel: string;

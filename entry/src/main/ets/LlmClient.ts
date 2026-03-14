@@ -1,32 +1,7 @@
 import { http } from '@kit.NetworkKit';
-import { BusinessError } from '@kit.BasicServicesKit';
 import { logger } from './utils';
 import { ProjectContext } from './env/ProjectContext';
-
-/**
- * 推理配置选项
- */
-export interface VllmOptions {
-  frequency_penalty?: number;
-  max_tokens?: number;
-  temperature?: number;
-  top_p?: number;
-  logprobs?: boolean;
-  top_logprobs?: number;
-  stop?: string | string[];
-}
-
-export interface ToolCallRequest {
-  id: string;
-  name: string;
-  arguments: Record<string, any>;
-}
-
-export interface ChatResponse {
-  content: string;
-  tool_calls: ToolCallRequest[] | null;
-  ppl?: number;
-}
+import { ChatResponse, Message, ToolCallRequest, VllmOptions } from './agent/types';
 
 const TAG = 'LLMClient';
 
@@ -35,6 +10,7 @@ export class LLMClient {
   private model: string = "Qwen2-72B-Instruct-GPTQ-Int4";
   private apiKey: string = "";
   private apiUrl: string = "";
+
   private defaultOptions: VllmOptions = {
     max_tokens: 4096,
     temperature: 0.7,
@@ -122,7 +98,8 @@ export class LLMClient {
 
     const result: ChatResponse = {
       content: content,
-      tool_calls: tool_calls.length > 0 ? tool_calls : null
+      tool_calls: tool_calls.length > 0 ? tool_calls : null,
+      status: 'success'
     };
 
     // 处理 PPL (Perplexity)
@@ -138,7 +115,7 @@ export class LLMClient {
    * 统一聊天接口
    */
   async chatCompletion(
-    messages: Array<{role: string, content: string}>,
+    messages: Message[],
     tools: Array<any> | null = null,
     modelOverride?: string
   ): Promise<ChatResponse> {
@@ -156,8 +133,9 @@ export class LLMClient {
     url: string,
     apiKey: string,
     model: string,
-    messages: any[],
-    tools: any[] | null
+    messages: Message[],
+    tools: any[] | null,
+    retries: number = 2
   ): Promise<ChatResponse> {
     let httpRequest = http.createHttp();
 
@@ -182,20 +160,33 @@ export class LLMClient {
       });
 
       if (response.responseCode !== http.ResponseCode.OK) {
-        return { content: `Error: HTTP ${response.responseCode}`, tool_calls: null };
+        if (retries > 0 && (response.responseCode >= 500 || response.responseCode === 429)) {
+          logger.info(TAG, `Retring... Attempts left: ${retries}`);
+          return await this.requestHttp(url, apiKey, model, messages, tools, retries - 1);
+        }
+        return {
+          status: 'error',
+          content: `网络失败 code: ${response.responseCode}`,
+          errorCode: response.responseCode,
+          tool_calls: null
+        };
       }
 
       const resObj = response.result as any;
       if (resObj.choices && resObj.choices.length > 0) {
-        return this.parseMessage(resObj.choices[0]);
+        const parsed = this.parseMessage(resObj.choices[0]);
+        parsed.status = 'success';
+        return parsed;
       }
 
-      return { content: "Error: No choices in response", tool_calls: null };
+      return { status: 'error', content: "No choices", tool_calls: null };
 
     } catch (err) {
-      const bError = err as BusinessError;
-      logger.error(TAG, `Request failed: ${bError.message}`);
-      return { content: `Request Exception: ${bError.message}`, tool_calls: null };
+      logger.error(TAG, `Request failed: ${err.message}`);
+      if (retries > 0) {
+        return await this.requestHttp(url, apiKey, model, messages, tools, retries - 1);
+      }
+      return { status: 'error', content: err.message, tool_calls: null };
     } finally {
       httpRequest.destroy();
     }
