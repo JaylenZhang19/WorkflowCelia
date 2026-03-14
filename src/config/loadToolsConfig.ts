@@ -4,6 +4,8 @@ import path from 'path';
 export interface ToolConfigItem {
   name: string;
   enabled: boolean;
+  module: string;
+  export: string;
 }
 
 export interface ToolsConfig {
@@ -20,7 +22,7 @@ function asObject(value: unknown, field: string): Record<string, any> {
 export function loadToolsConfig(configPath: string): ToolsConfig {
   const absPath = path.resolve(configPath);
   if (!fs.existsSync(absPath)) {
-    return { tools: [] };
+    throw new Error(`Tools config file not found: ${absPath}`);
   }
 
   const raw = fs.readFileSync(absPath, 'utf-8');
@@ -34,10 +36,10 @@ export function loadToolsConfig(configPath: string): ToolsConfig {
   const root: Record<string, any> = asObject(parsed, 'root');
   const toolsRaw = root.tools;
   if (toolsRaw == null) {
-    return { tools: [] };
+    throw new Error("Invalid tools config: missing field 'tools'");
   }
   if (!Array.isArray(toolsRaw)) {
-    throw new Error("Invalid tools config field 'tools': expected an array of {name, enabled}");
+    throw new Error("Invalid tools config field 'tools': expected an array of {name, enabled, module, export}");
   }
 
   const tools: ToolConfigItem[] = toolsRaw.map((item, idx) => {
@@ -49,8 +51,16 @@ export function loadToolsConfig(configPath: string): ToolsConfig {
     if (!name) {
       throw new Error(`Invalid tools config item at index ${idx}: missing 'name'`);
     }
+    const modulePath = String(obj.module ?? '').trim();
+    if (!modulePath) {
+      throw new Error(`Invalid tools config item at index ${idx}: missing 'module'`);
+    }
+    const exportName = String(obj.export ?? '').trim();
+    if (!exportName) {
+      throw new Error(`Invalid tools config item at index ${idx}: missing 'export'`);
+    }
     const enabled = Boolean(obj.enabled);
-    return { name, enabled };
+    return { name, enabled, module: modulePath, export: exportName };
   });
 
   return { tools };

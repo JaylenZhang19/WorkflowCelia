@@ -1,9 +1,34 @@
 {
   "tools": [
-    { "name": "read_file", "enabled": true },
-    { "name": "write_file", "enabled": true },
-    { "name": "edit_file", "enabled": true },
-    { "name": "list_dir", "enabled": true },
-    { "name": "finish", "enabled": true }
+    {
+      "name": "read_file",
+      "enabled": true,
+      "module": "src/agent/tools/FileTool",
+      "export": "ReadFileTool"
+    },
+    {
+      "name": "write_file",
+      "enabled": true,
+      "module": "src/agent/tools/FileTool",
+      "export": "WriteFileTool"
+    },
+    {
+      "name": "edit_file",
+      "enabled": true,
+      "module": "src/agent/tools/FileTool",
+      "export": "EditFileTool"
+    },
+    {
+      "name": "list_dir",
+      "enabled": true,
+      "module": "src/agent/tools/FileTool",
+      "export": "ListDirTool"
+    },
+    {
+      "name": "finish",
+      "enabled": true,
+      "module": "src/agent/tools/FinishTool",
+      "export": "FinishTool"
+    }
   ]
 }

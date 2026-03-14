@@ -1,7 +1,9 @@
+import path from 'path';
+import fs from 'fs';
+import { pathToFileURL } from 'url';
 import { Tool } from './tools/BaseTool';
 import { logger } from '../utils';
 import { ToolConfigItem } from '../config/loadToolsConfig';
-import { TOOL_REGISTRY } from './tools/registry';
 
 /**
  * 智能助手工具管理器
@@ -10,57 +12,101 @@ export class ToolsManager {
   private workspace: string | null = null;
   private allowedDir: string | null = null;
   private tools: Map<string, Tool> = new Map();
-  private toolConfig: ToolConfigItem[] | null = null;
+  private toolConfig: ToolConfigItem[] = [];
+  private projectRoot: string | null = null;
+  private initialized: boolean = false;
 
   /**
    * 初始化工具管理器
    * @param workspace 基础工作目录 (通常为 context.filesDir)
    * @param allowedDir 允许操作的目录限制
    * @param toolConfig 工具配置文件
+   * @param projectRoot 项目根目录
    */
   constructor(
     workspace: string | null = null,
     allowedDir: string | null = null,
-    toolConfig: ToolConfigItem[]
+    toolConfig: ToolConfigItem[] = [],
+    projectRoot: string | null = null
   ) {
     this.workspace = workspace;
     this.allowedDir = allowedDir;
     this.toolConfig = toolConfig;
+    this.projectRoot = projectRoot;
+  }
 
-    this.registerAllTools();
+  private resolveModuleFile(modulePath: string, absPath: string): string {
+    const projectRoot = this.projectRoot ? path.resolve(this.projectRoot) : process.cwd();
+    const base = absPath;
+    const candidates: string[] = [];
+
+    const pushIf = (p: string) => {
+      if (!candidates.includes(p)) candidates.push(p);
+    };
+
+    pushIf(base);
+    pushIf(`${base}.js`);
+    pushIf(`${base}.ts`);
+
+    if (modulePath.startsWith('src/')) {
+      const distBase = path.resolve(projectRoot, 'dist', modulePath);
+      pushIf(distBase);
+      pushIf(`${distBase}.js`);
+    } else if (base.startsWith(path.resolve(projectRoot, 'src') + path.sep)) {
+      const relFromSrc = path.relative(path.resolve(projectRoot, 'src'), base);
+      const distBase = path.resolve(projectRoot, 'dist', 'src', relFromSrc);
+      pushIf(distBase);
+      pushIf(`${distBase}.js`);
+    }
+
+    const found = candidates.find((p) => fs.existsSync(p));
+    return found ?? base;
+  }
+
+  private ensureSafeModulePath(modulePath: string): string {
+    const projectRoot = this.projectRoot ? path.resolve(this.projectRoot) : process.cwd();
+    const abs = path.isAbsolute(modulePath) ? modulePath : path.resolve(projectRoot, modulePath);
+    const toolsDir = path.resolve(projectRoot, 'src/agent/tools');
+    if (!abs.startsWith(toolsDir)) {
+      throw new Error(`Tool module path must be under ${toolsDir}: ${modulePath}`);
+    }
+    return abs;
   }
 
   /**
-   * 注册默认内置工具
-   * 注意：鸿蒙环境下移除了 ExecTool (Shell)，建议替换为原生的原子能力工具
+   * 从 tools.json 动态加载并注册工具
    */
-  private registerAllTools(): void {
-    const registry = TOOL_REGISTRY;
-    const ctx = { workspace: this.workspace, allowedDir: this.allowedDir };
+  public async init(): Promise<void> {
+    if (this.initialized) return;
 
-    if (!this.toolConfig) {
-      Object.keys(registry).forEach((name) => {
-        this.registerTool(registry[name](ctx));
-      });
-      return;
-    }
-
-    const configuredNames = new Set<string>();
     for (const item of this.toolConfig) {
-      configuredNames.add(item.name);
       if (!item.enabled) continue;
-      const factory = registry[item.name];
-      if (!factory) {
-        logger.warn('ToolsManager', `Unknown tool in tools.json: ${item.name}`);
-        continue;
+      try {
+        const safeAbs = this.ensureSafeModulePath(item.module);
+        const resolved = this.resolveModuleFile(item.module, safeAbs);
+        const mod = await import(pathToFileURL(resolved).href);
+        const ToolCtor = mod[item.export];
+        if (!ToolCtor) {
+          logger.warn('ToolsManager', `Export '${item.export}' not found in ${item.module}`);
+          continue;
+        }
+        const tool: Tool = new ToolCtor(this.workspace, this.allowedDir);
+        if (tool.name !== item.name) {
+          logger.warn(
+            'ToolsManager',
+            `Tool name mismatch for ${item.module}:${item.export} (config: ${item.name}, actual: ${tool.name})`
+          );
+        }
+        this.registerTool(tool);
+      } catch (e) {
+        logger.warn(
+          'ToolsManager',
+          `Failed to load tool ${item.name} from ${item.module}:${item.export} - ${e instanceof Error ? e.message : String(e)}`
+        );
       }
-      this.registerTool(factory(ctx));
     }
 
-    const missing = Object.keys(registry).filter((name) => !configuredNames.has(name));
-    if (missing.length > 0) {
-      logger.warn('ToolsManager', `Tools not listed in tools.json: ${missing.join(', ')}`);
-    }
+    this.initialized = true;
   }
 
   /**
