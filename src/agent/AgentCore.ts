@@ -4,6 +4,7 @@ import { logger } from '../utils';
 import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';
 import { AgentStepEvent, ChatResponse, Message, ToolCallRequest } from './types';
+import { ProjectContext } from '../env/ProjectContext';
 
 // 模拟 Python 的截断函数
 function truncate(content: string, maxLength: number = 800): string {
@@ -16,22 +17,32 @@ const TAG: string = 'AgentCore';
 
 export class AgentCore {
   private conversationHistory: Message[] = [];
-  private skillsDir: string;
   private workspace: string;
   private skillLoader: SkillLoader;
   private toolsManager: ToolsManager;
+  private initialized: boolean = false;
 
   constructor(workspace: string) {
     this.workspace = workspace;
-    this.skillsDir = workspace + '/skills'
+    const ctx = ProjectContext.getInstance();
 
-    this.skillLoader = new SkillLoader(this.skillsDir);
-    this.toolsManager = new ToolsManager(this.workspace);
+    this.skillLoader = new SkillLoader(ctx.paths.skillsDir);
+    this.toolsManager = new ToolsManager(
+      this.workspace,
+      ctx.paths.allowedDir,
+      60,
+      ctx.config.agent.restrictToWorkspace ?? true
+    );
     logger.info(TAG, `可用工具: ${JSON.stringify(this.toolsManager.listTools())}`);
-    logger.info(TAG, `可用技能: ${JSON.stringify(Array.from(this.skillLoader.skillMetadata.keys()))}`)
+    logger.info(TAG, `使用 ${ctx.config.model.modelName} 作为 API 模型`);
+  }
 
-    logger.info(TAG, `使用 ${ProjectContext.getInstance().config.model.modelName} 作为 API 模型`);
+  public async init(): Promise<void> {
+    if (this.initialized) return;
+    await this.skillLoader.loadAllSkills();
+    logger.info(TAG, `可用技能: ${JSON.stringify(Array.from(this.skillLoader.skillMetadata.keys()))}`);
     this.initSystemPrompt();
+    this.initialized = true;
   }
 
   private initSystemPrompt(): void {
@@ -48,7 +59,7 @@ export class AgentCore {
 【环境信息】
 应用空间(Context): 所有操作仅限于当前应用的沙箱目录 ${this.workspace}。
 
-- 技能目录: ${this.skillsDir}
+- 技能目录: ${ProjectContext.getInstance().paths.skillsDir}
 
 技能结构: 每个技能为一个独立目录，包含 SKILL.md 指引和可选的 referecens/
 
@@ -80,6 +91,7 @@ ${skillMetadata}
     onStep?: (step: AgentStepEvent) => void,
     maxSteps: number = 20
   ): Promise<string> {
+    await this.init();
     logger.info(TAG, `====== NEW TASK: ${userInput} ======`);
 
     const currentTime: string = new Date().toLocaleString();
@@ -218,7 +230,7 @@ ${skillMetadata}
   private async saveLogs(history: Message[]): Promise<void> {
     const logPath = `${this.workspace}/messages.json`;
     try {
-      await FileUtil.writeTextFile(logPath, JSON.stringify(history, null, 2));
+      FileUtil.writeTextFile(logPath, JSON.stringify(history, null, 2));
       logger.info(TAG, `saveLogs, 日志写入成功 logPath: ${logPath}`);
     } catch (e) {
       logger.error(TAG, `保存日志失败: ${JSON.stringify(e)}`);

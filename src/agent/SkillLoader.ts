@@ -1,4 +1,5 @@
-import fs from '@ohos.file.fs';
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../utils/Logger';
 
 /**
@@ -58,46 +59,45 @@ export class SkillLoader {
     logger.info(TAG, `[SkillLoader] 正在从 ${this.skillsDir} 加载技能...`);
 
     try {
-      if (!fs.accessSync(this.skillsDir)) {
+      if (!fs.existsSync(this.skillsDir)) {
         logger.warn(TAG, `[SkillLoader] 技能目录不存在: ${this.skillsDir}`);
         return;
       }
 
-      let filenames = fs.listFileSync(this.skillsDir);
-      for (let skillFolderName of filenames) {
-        let skillFolderPath = `${this.skillsDir}/${skillFolderName}`;
+      const entries = fs.readdirSync(this.skillsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const skillFolderName = entry.name;
+        const skillFolderPath = path.join(this.skillsDir, skillFolderName);
 
-        // 检查是否为目录
-        let stat = fs.statSync(skillFolderPath);
-        if (!stat.isDirectory()) continue;
-
-        let skillDocPath = `${skillFolderPath}/SKILL.md`;
-        if (!fs.accessSync(skillDocPath)) {
+        const skillDocPath = path.join(skillFolderPath, 'SKILL.md');
+        if (!fs.existsSync(skillDocPath)) {
           logger.warn(TAG, `[SkillLoader] 跳过 ${skillFolderName}: 缺少 SKILL.md`);
           continue;
         }
 
         try {
           // 读取文件内容
-          let content: string = fs.readTextSync(skillDocPath);
+          const content: string = fs.readFileSync(skillDocPath, 'utf-8');
 
           // 提取元数据
           let metadata = this.extractMetadata(skillFolderName, content, skillDocPath);
           this.skillMetadata.set(skillFolderName, metadata);
           this.skillFullDocs.set(skillFolderName, content);
 
-          // 检查 scripts 目录 (鸿蒙环境下仅做存在性检查，通常无法直接运行 py 脚本)
-          let scriptsPath = `${skillFolderPath}/scripts`;
+          // 检查 scripts 目录
+          let scriptsPath = path.join(skillFolderPath, 'scripts');
           let hasScripts = false;
-          if (fs.accessSync(scriptsPath)) {
-            let scripts = fs.listFileSync(scriptsPath);
+          if (fs.existsSync(scriptsPath)) {
+            const scripts = fs.readdirSync(scriptsPath);
             hasScripts = scripts.length > 0;
           }
 
           let label = hasScripts ? "文档 + 脚本" : "纯文档";
           logger.info(TAG, `[SkillLoader] 已加载技能: ${skillFolderName} (${label})`);
         } catch (e) {
-          logger.error(TAG, `[SkillLoader] 加载 ${skillFolderName} 失败: ${e.message}`);
+          const msg = e instanceof Error ? e.message : String(e);
+          logger.error(TAG, `[SkillLoader] 加载 ${skillFolderName} 失败: ${msg}`);
           this.skillMetadata.set(skillFolderName, new SkillMetadata(
             skillFolderName,
             `技能: ${skillFolderName}（加载失败）`

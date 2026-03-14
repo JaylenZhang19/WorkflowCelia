@@ -1,6 +1,6 @@
 import { logger } from '../utils';
-import { ModelConfig } from '../env/ProjectContext';
 import { ChatResponse, Message, ToolCallRequest, VllmOptions } from './types';
+import { ModelConfig, ProjectContext } from '../env/ProjectContext';
 
 const TAG = 'LLMClient';
 
@@ -81,16 +81,12 @@ export class LLMClient {
    * 统一聊天接口
    */
   async chatCompletion(messages: Message[], tools: Array<any> | null = null): Promise<ChatResponse> {
-    if (!ProjectContext.getInstance()) {
-      logger.error(TAG, 'ProjectContext instance is undefined');
-      return;
-    }
     const modelConfig: ModelConfig = ProjectContext.getInstance().config.model;
     return this.requestHttp(modelConfig.apiUrl, modelConfig.apiKey, modelConfig.modelName, messages, tools);
   }
 
   /**
-   * 核心 HTTP 请求逻辑 (使用 @kit.NetworkKit)
+   * 核心 HTTP 请求逻辑 (Node.js fetch)
    */
   private async requestHttp(
     url: string,
@@ -100,8 +96,6 @@ export class LLMClient {
     tools: any[] | null,
     retries: number = 2
   ): Promise<ChatResponse> {
-    let httpRequest = http.createHttp();
-
     const requestData = {
       model: model,
       messages: messages,
@@ -110,32 +104,29 @@ export class LLMClient {
     };
 
     try {
-      const response = await httpRequest.request(url, {
-        method: http.RequestMethod.POST,
-        header: {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        extraData: JSON.stringify(requestData),
-        expectDataType: http.HttpDataType.OBJECT,
-        connectTimeout: 60000,
-        readTimeout: 60000
+        body: JSON.stringify(requestData)
       });
 
-      if (response.responseCode !== http.ResponseCode.OK) {
-        if (retries > 0 && (response.responseCode >= 500 || response.responseCode === 429)) {
+      if (!res.ok) {
+        if (retries > 0 && (res.status >= 500 || res.status === 429)) {
           logger.info(TAG, `Retring... Attempts left: ${retries}`);
           return await this.requestHttp(url, apiKey, model, messages, tools, retries - 1);
         }
         return {
           status: 'error',
-          content: `网络失败 code: ${response.responseCode}`,
-          errorCode: response.responseCode,
+          content: `网络失败 code: ${res.status}`,
+          errorCode: res.status,
           tool_calls: []
         };
       }
 
-      const resObj = response.result as any;
+      const resObj = await res.json();
       if (resObj.choices && resObj.choices.length > 0) {
         const parsed = this.parseMessage(resObj.choices[0]);
         parsed.status = 'success';
@@ -145,13 +136,12 @@ export class LLMClient {
       return { status: 'error', content: "No choices", tool_calls: [] };
 
     } catch (err) {
-      logger.error(TAG, `Request failed: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error(TAG, `Request failed: ${message}`);
       if (retries > 0) {
         return await this.requestHttp(url, apiKey, model, messages, tools, retries - 1);
       }
-      return { status: 'error', content: err.message, tool_calls: [] };
-    } finally {
-      httpRequest.destroy();
+      return { status: 'error', content: message, tool_calls: [] };
     }
   }
 }

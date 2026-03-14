@@ -1,5 +1,5 @@
 import { Tool } from './BaseTool';
-import {FileUtil} from "../../utils";
+import { FileUtil } from '../../utils';
 
 function resolvePath(pathStr: string, workspace: string | null, allowedDir: string | null): string {
   let p = pathStr;

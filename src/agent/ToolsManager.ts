@@ -3,7 +3,7 @@ import { ReadFileTool, WriteFileTool, EditFileTool, ListDirTool } from './tools/
 import { FinishTool } from './tools/FinishTool';
 
 /**
- * 智能助手工具管理器 - HarmonyOS 版
+ * 智能助手工具管理器
  */
 export class ToolsManager {
   private workspace: string | null = null;
@@ -94,8 +94,7 @@ export class ToolsManager {
    * 由于鸿蒙环境 IO 较多为异步，此处使用 async/await
    */
   public async executeTool(toolName: string, args: Record<string, any>): Promise<string> {
-    const tool: Tool = this.getTool(toolName);
-
+    const tool = this.getTool(toolName);
     if (!tool) {
       return `Error: Tool '${toolName}' not found`;
     }

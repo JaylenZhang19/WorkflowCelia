@@ -1,0 +1,15 @@
+{
+  "model": {
+    "apiUrl": "https://api.openai.com/v1/chat/completions",
+    "apiKey": "YOUR_API_KEY",
+    "modelName": "gpt-4.1-mini"
+  },
+  "agent": {
+    "workDir": "./.agent-work",
+    "skillsDir": "./skills",
+    "allowedDir": "./.agent-work",
+    "maxSteps": 20,
+    "restrictToWorkspace": true
+  }
+}
+
