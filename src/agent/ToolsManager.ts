@@ -1,6 +1,7 @@
 import { Tool } from './tools/BaseTool';
-import { ReadFileTool, WriteFileTool, EditFileTool, ListDirTool } from './tools/FileTool';
-import { FinishTool } from './tools/FinishTool';
+import { logger } from '../utils';
+import { ToolConfigItem } from '../config/loadToolsConfig';
+import { TOOL_REGISTRY } from './tools/registry';
 
 /**
  * 智能助手工具管理器
@@ -8,46 +9,58 @@ import { FinishTool } from './tools/FinishTool';
 export class ToolsManager {
   private workspace: string | null = null;
   private allowedDir: string | null = null;
-  private execTimeout: number;
-  private restrictToWorkspace: boolean;
   private tools: Map<string, Tool> = new Map();
+  private toolConfig: ToolConfigItem[] | null = null;
 
   /**
    * 初始化工具管理器
    * @param workspace 基础工作目录 (通常为 context.filesDir)
    * @param allowedDir 允许操作的目录限制
-   * @param execTimeout 任务超时时间 (秒)
-   * @param restrictToWorkspace 是否限制在工作空间内
+   * @param toolConfig 工具配置文件
    */
   constructor(
     workspace: string | null = null,
     allowedDir: string | null = null,
-    execTimeout: number = 60,
-    restrictToWorkspace: boolean = false
+    toolConfig: ToolConfigItem[]
   ) {
     this.workspace = workspace;
     this.allowedDir = allowedDir;
-    this.execTimeout = execTimeout;
-    this.restrictToWorkspace = restrictToWorkspace;
+    this.toolConfig = toolConfig;
 
-    this.registerDefaultTools();
+    this.registerAllTools();
   }
 
   /**
    * 注册默认内置工具
    * 注意：鸿蒙环境下移除了 ExecTool (Shell)，建议替换为原生的原子能力工具
    */
-  private registerDefaultTools(): void {
-    // 文件系统工具
-    this.registerTool(new ReadFileTool(this.workspace, this.allowedDir));
-    this.registerTool(new WriteFileTool(this.workspace, this.allowedDir));
-    this.registerTool(new EditFileTool(this.workspace, this.allowedDir));
-    this.registerTool(new ListDirTool(this.workspace, this.allowedDir));
+  private registerAllTools(): void {
+    const registry = TOOL_REGISTRY;
+    const ctx = { workspace: this.workspace, allowedDir: this.allowedDir };
 
-    // 任务完成工具
-    this.registerTool(new FinishTool());
+    if (!this.toolConfig) {
+      Object.keys(registry).forEach((name) => {
+        this.registerTool(registry[name](ctx));
+      });
+      return;
+    }
 
-    // 提示：此处可以根据需要注册鸿蒙特有能力，如 AppJumpTool, DeviceInfoTool 等
+    const configuredNames = new Set<string>();
+    for (const item of this.toolConfig) {
+      configuredNames.add(item.name);
+      if (!item.enabled) continue;
+      const factory = registry[item.name];
+      if (!factory) {
+        logger.warn('ToolsManager', `Unknown tool in tools.json: ${item.name}`);
+        continue;
+      }
+      this.registerTool(factory(ctx));
+    }
+
+    const missing = Object.keys(registry).filter((name) => !configuredNames.has(name));
+    if (missing.length > 0) {
+      logger.warn('ToolsManager', `Tools not listed in tools.json: ${missing.join(', ')}`);
+    }
   }
 
   /**

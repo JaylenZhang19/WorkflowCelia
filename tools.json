@@ -1,0 +1,9 @@
+{
+  "tools": [
+    { "name": "read_file", "enabled": true },
+    { "name": "write_file", "enabled": true },
+    { "name": "edit_file", "enabled": true },
+    { "name": "list_dir", "enabled": true },
+    { "name": "finish", "enabled": true }
+  ]
+}

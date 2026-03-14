@@ -5,6 +5,7 @@ import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';
 import { AgentStepEvent, ChatResponse, Message, ToolCallRequest } from './types';
 import { ProjectContext } from '../env/ProjectContext';
+import {loadToolsConfig, ToolsConfig} from '../config/loadToolsConfig';
 
 // 模拟 Python 的截断函数
 function truncate(content: string, maxLength: number = 800): string {
@@ -25,13 +26,13 @@ export class AgentCore {
   constructor(workspace: string) {
     this.workspace = workspace;
     const ctx = ProjectContext.getInstance();
+    const toolsConfig: ToolsConfig = loadToolsConfig(ctx.paths.toolsConfigPath);
 
     this.skillLoader = new SkillLoader(ctx.paths.skillsDir);
     this.toolsManager = new ToolsManager(
       this.workspace,
       ctx.paths.allowedDir,
-      60,
-      ctx.config.agent.restrictToWorkspace ?? true
+      toolsConfig.tools
     );
     logger.info(TAG, `可用工具: ${JSON.stringify(this.toolsManager.listTools())}`);
     logger.info(TAG, `使用 ${ctx.config.model.modelName} 作为 API 模型`);

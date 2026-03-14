@@ -22,6 +22,7 @@ export interface ProjectConfig {
 export interface ProjectPaths {
   projectRoot: string;
   configPath: string;
+  toolsConfigPath: string;
   agentWorkDir: string;
   skillsDir: string;
   allowedDir: string | null;
@@ -42,6 +43,7 @@ export class ProjectContext {
     const projectRootAbs = path.resolve(params.projectRoot);
     const configPathAbs = path.resolve(params.configPath);
     const configDir = path.dirname(configPathAbs);
+    const toolsConfigPathAbs = path.resolve(configDir, 'tools.json');
 
     const agentWorkDirAbs = path.resolve(configDir, params.config.agent.workDir);
     const skillsDirAbs = path.resolve(configDir, params.config.agent.skillsDir);
@@ -52,6 +54,7 @@ export class ProjectContext {
     const pathsObj: ProjectPaths = {
       projectRoot: projectRootAbs,
       configPath: configPathAbs,
+      toolsConfigPath: toolsConfigPathAbs,
       agentWorkDir: agentWorkDirAbs,
       skillsDir: skillsDirAbs,
       allowedDir: allowedDirAbs
@@ -68,4 +71,3 @@ export class ProjectContext {
     return ProjectContext.instance;
   }
 }
-
