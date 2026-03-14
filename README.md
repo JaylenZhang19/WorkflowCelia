@@ -1,6 +1,6 @@
 # 项目说明
 
-这是一个用 TypeScript 编写的「Agent/工具调用」最小实现原型：入口从命令行读取用户输入，加载本地配置（模型 URL / API Key / 模型名 / Agent 工作目录等），初始化全局 `ProjectContext`，然后运行 `AgentCore` 进入多步推理与工具调用循环。
+这是一个用 TypeScript 编写的「模拟鸿蒙Agent/工具调用」最小实现原型：入口从命令行读取用户输入，加载本地配置（模型 URL / API Key / 模型名 / Agent 工作目录等），初始化全局 `ProjectContext`，然后运行 `AgentCore` 进入多步推理与工具调用循环。
 
 项目目标：用 TS 项目模拟鸿蒙环境中的 Agent，作为 **Agent 能力评测框架**。未来通过修改模型配置文件更换模型，在同一套测试用例下运行，评估不同模型在不同维度的能力表现。
 
@@ -109,6 +109,7 @@ npm run start -- --config config.json "你的问题"
 - `src/agent/LlmClient.ts`：HTTP 调用（Node `fetch`），解析 tool_calls
 - `src/agent/ToolsManager.ts`：工具注册与执行
 - `src/agent/tools/*`：内置工具（read/write/edit/list/finish）
+- `src/mockapps/*`：模拟的系统/三方应用（供 tools 调用）
 - `src/agent/SkillLoader.ts`：从 `skillsDir` 加载技能元信息与文档
 - `src/utils/*`：日志与文件工具
 - `dist/`：`tsc` 输出目录（构建产物）
@@ -129,6 +130,7 @@ npm run start -- --config config.json "你的问题"
 - 已完成：`LLMClient` 已改为 Node `fetch` 实现（不再依赖 HarmonyOS HTTP Kit）
 - 已注意：`config.json` 已加入 `.gitignore`，避免泄露密钥
 - 已完成：`tools.json` 驱动工具注册（动态加载），不再在代码中硬编码工具列表
+- 已完成：模拟应用 `mockapps/memo`（备忘录）与对应工具
 
 ### 编码约束（保持一致性）
 
@@ -163,3 +165,45 @@ npm run start -- --config config.json "hello"
 
 - 仓库根目录遗留空目录 `agent/`、`utils/`（已迁移到 `src/`）
 - 尚无测试用例；如后续引入测试，优先从配置加载与路径限制（`allowedDir`）开始补
+- 更多模拟应用将陆续放入 `src/mockapps`，并通过 `tools.json` 暴露为工具
+
+---
+
+## 3) 备忘录（Memo）模拟应用
+
+位置：`src/mockapps/memo/MemoApp.ts`
+
+能力：
+- 读取备忘录（按名称）
+- 写入备忘录（可选名称；无名称则新建）
+- 追加写入备忘录（按名称）
+- 删除备忘录（按名称）
+- 检索备忘录（列出所有 `.txt` 文件名）
+
+存储位置：
+- 默认写入到 `agent.workDir` 下的 `mockapps/memo/` 目录（例如 `.agent-work/mockapps/memo`）
+
+对应工具：
+- `memo_read`
+- `memo_write`
+- `memo_append`
+- `memo_delete`
+- `memo_list`
+
+---
+
+## 4) 模拟应用规范模板
+
+推荐目录结构：
+- `src/mockapps/<appName>/`
+- `src/mockapps/<appName>/<AppName>App.ts`
+
+建议包含：
+- 应用类（无状态或仅依赖 `workspace/allowedDir`）
+- 数据存储目录：`agent.workDir/mockapps/<appName>/`
+- 最小功能接口：`read` / `write` / `list`（按需扩展 `append` / `delete` / `search`）
+
+工具接入：
+- 在 `src/agent/tools/` 内新增 `<AppName>Tool.ts`
+- 工具只调用 mock app 的方法，不直接操作文件
+- `tools.json` 中显式注册每个工具（包含 `name` / `enabled` / `module` / `export`）

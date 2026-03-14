@@ -25,6 +25,36 @@
       "export": "ListDirTool"
     },
     {
+      "name": "memo_read",
+      "enabled": true,
+      "module": "src/agent/tools/MemoTool",
+      "export": "MemoReadTool"
+    },
+    {
+      "name": "memo_write",
+      "enabled": true,
+      "module": "src/agent/tools/MemoTool",
+      "export": "MemoWriteTool"
+    },
+    {
+      "name": "memo_append",
+      "enabled": true,
+      "module": "src/agent/tools/MemoTool",
+      "export": "MemoAppendTool"
+    },
+    {
+      "name": "memo_delete",
+      "enabled": true,
+      "module": "src/agent/tools/MemoTool",
+      "export": "MemoDeleteTool"
+    },
+    {
+      "name": "memo_list",
+      "enabled": true,
+      "module": "src/agent/tools/MemoTool",
+      "export": "MemoListTool"
+    },
+    {
       "name": "finish",
       "enabled": true,
       "module": "src/agent/tools/FinishTool",

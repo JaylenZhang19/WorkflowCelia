@@ -36,4 +36,8 @@ export class FileUtil {
   public static listDir(path: string): string[] {
     return fs.readdirSync(path);
   }
+
+  public static removeFile(path: string): void {
+    fs.unlinkSync(path);
+  }
 }
