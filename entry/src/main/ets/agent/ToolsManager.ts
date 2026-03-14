@@ -1,4 +1,4 @@
-import { Tool } from './tools/BaseTool'; // 假设您已有基础 Tool 类
+import { Tool } from './tools/BaseTool';
 import { ReadFileTool, WriteFileTool, EditFileTool, ListDirTool } from './tools/FileTool';
 import { FinishTool } from './tools/FinishTool';
 
@@ -94,7 +94,7 @@ export class ToolsManager {
    * 由于鸿蒙环境 IO 较多为异步，此处使用 async/await
    */
   public async executeTool(toolName: string, args: Record<string, any>): Promise<string> {
-    const tool = this.getTool(toolName);
+    const tool: Tool = this.getTool(toolName);
 
     if (!tool) {
       return `Error: Tool '${toolName}' not found`;

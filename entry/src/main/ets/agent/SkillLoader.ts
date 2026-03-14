@@ -1,5 +1,5 @@
 import fs from '@ohos.file.fs';
-import { BusinessError } from '@ohos.base';
+import { logger } from '../utils/Logger';
 
 /**
  * 技能元信息
@@ -9,12 +9,20 @@ export class SkillMetadata {
   description: string;
   trigger: string;
   category: string;
+  location: string;
 
-  constructor(name: string, description: string, trigger: string = "", category: string = "") {
+  constructor(
+    name: string,
+    description: string,
+    trigger: string = "",
+    category: string = "",
+    location: string = ""
+  ) {
     this.name = name;
     this.description = description;
     this.trigger = trigger;
     this.category = category;
+    this.location = location;
   }
 
   toDict(): Record<string, string> {
@@ -22,10 +30,13 @@ export class SkillMetadata {
       "name": this.name,
       "description": this.description,
       "trigger": this.trigger,
-      "category": this.category
+      "category": this.category,
+      "location": this.location
     };
   }
 }
+
+const TAG: string = 'SkillLoader';
 
 /**
  * 技能加载器 - 适配 HarmonyOS 沙箱文件系统
@@ -36,6 +47,7 @@ export class SkillLoader {
   public skillFullDocs: Map<string, string> = new Map();
 
   constructor(skillsDir: string) {
+    logger.info(TAG, `skillDir: ${skillsDir}`);
     this.skillsDir = skillsDir;
   }
 
@@ -43,11 +55,11 @@ export class SkillLoader {
    * 加载所有技能
    */
   public async loadAllSkills(): Promise<void> {
-    console.info(`[SkillLoader] 正在从 ${this.skillsDir} 加载技能...`);
+    logger.info(TAG, `[SkillLoader] 正在从 ${this.skillsDir} 加载技能...`);
 
     try {
       if (!fs.accessSync(this.skillsDir)) {
-        console.warn(`[SkillLoader] 技能目录不存在: ${this.skillsDir}`);
+        logger.warn(TAG, `[SkillLoader] 技能目录不存在: ${this.skillsDir}`);
         return;
       }
 
@@ -61,16 +73,16 @@ export class SkillLoader {
 
         let skillDocPath = `${skillFolderPath}/SKILL.md`;
         if (!fs.accessSync(skillDocPath)) {
-          console.warn(`[SkillLoader] 跳过 ${skillFolderName}: 缺少 SKILL.md`);
+          logger.warn(TAG, `[SkillLoader] 跳过 ${skillFolderName}: 缺少 SKILL.md`);
           continue;
         }
 
         try {
           // 读取文件内容
-          let content = fs.readTextSync(skillDocPath);
+          let content: string = fs.readTextSync(skillDocPath);
 
           // 提取元数据
-          let metadata = this.extractMetadata(skillFolderName, content);
+          let metadata = this.extractMetadata(skillFolderName, content, skillDocPath);
           this.skillMetadata.set(skillFolderName, metadata);
           this.skillFullDocs.set(skillFolderName, content);
 
@@ -83,31 +95,31 @@ export class SkillLoader {
           }
 
           let label = hasScripts ? "文档 + 脚本" : "纯文档";
-          console.info(`[SkillLoader] 已加载技能: ${skillFolderName} (${label})`);
+          logger.info(TAG, `[SkillLoader] 已加载技能: ${skillFolderName} (${label})`);
         } catch (e) {
-          let err = e as BusinessError;
-          console.error(`[SkillLoader] 加载 ${skillFolderName} 失败: ${err.message}`);
+          logger.error(TAG, `[SkillLoader] 加载 ${skillFolderName} 失败: ${e.message}`);
           this.skillMetadata.set(skillFolderName, new SkillMetadata(
             skillFolderName,
             `技能: ${skillFolderName}（加载失败）`
           ));
         }
       }
-      console.info(`[SkillLoader] 共加载 ${this.skillMetadata.size} 个技能`);
+      logger.info(TAG, `[SkillLoader] 共加载 ${this.skillMetadata.size} 个技能`);
     } catch (e) {
-      console.error(`[SkillLoader] 目录遍历失败: ${JSON.stringify(e)}`);
+      logger.error(TAG, `[SkillLoader] 目录遍历失败: ${JSON.stringify(e)}`);
     }
   }
 
   /**
    * 从 SKILL.md 中提取元信息 (正则表达式适配)
    */
-  private extractMetadata(skillName: string, content: string): SkillMetadata {
+  private extractMetadata(skillName: string, content: string, skillMdPath: string): SkillMetadata {
     let metadataObj: Record<string, string> = {
       "name": skillName,
       "description": "",
       "trigger": "",
-      "category": ""
+      "category": "",
+      "location": skillMdPath
     };
 
     // 匹配 YAML Front Matter (--- ... ---)
@@ -142,7 +154,8 @@ export class SkillLoader {
       metadataObj["name"],
       metadataObj["description"],
       metadataObj["trigger"],
-      metadataObj["category"]
+      metadataObj["category"],
+      metadataObj["location"]
     );
   }
 
@@ -158,5 +171,19 @@ export class SkillLoader {
       };
     });
     return JSON.stringify(summary, null, 2);
+  }
+
+  public getSkillPrompt(): string {
+    const skillBlocks = Array.from(this.skillMetadata.values()).map(skill => {
+      return `
+      <skill>
+        <name>${skill.name}</name>
+        <description>${skill.description}</description>
+        <location>${skill.location}</location>
+      </skill>`
+    });
+    return `<available_skills>
+    ${skillBlocks.join("\n")}
+    <\available_skills>`;
   }
 }

@@ -31,7 +31,7 @@ export class AgentCore {
     logger.info(TAG, `可用工具: ${JSON.stringify(this.toolsManager.listTools())}`);
     logger.info(TAG, `可用技能: ${JSON.stringify(Array.from(this.skillLoader.skillMetadata.keys()))}`)
 
-    console.info(`使用 ${ProjectContext.getInstance().config.model.modelName} 作为 API 模型`);
+    logger.info(TAG, `使用 ${ProjectContext.getInstance().config.model.modelName} 作为 API 模型`);
     this.initSystemPrompt();
   }
 
@@ -225,7 +225,7 @@ ${skillMetadata}
       logger.info(TAG, `saveLogs, 日志写入成功 logPath: ${logPath}`)
       fs.closeSync(file);
     } catch (e) {
-      console.error("保存日志失败");
+      logger.error(TAG, "保存日志失败");
     }
   }
 }
