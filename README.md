@@ -2,6 +2,8 @@
 
 这是一个用 TypeScript 编写的「Agent/工具调用」最小实现原型：入口从命令行读取用户输入，加载本地配置（模型 URL / API Key / 模型名 / Agent 工作目录等），初始化全局 `ProjectContext`，然后运行 `AgentCore` 进入多步推理与工具调用循环。
 
+项目目标：用 TS 项目模拟鸿蒙环境中的 Agent，作为 **Agent 能力评测框架**。未来通过修改模型配置文件更换模型，在同一套测试用例下运行，评估不同模型在不同维度的能力表现。
+
 > 备注：代码里仍保留部分 “HarmonyOS” 相关文案/注释（主要在 prompt 文本中），当前工程已按 Node.js CLI 方式可构建运行。
 
 ---
@@ -61,11 +63,48 @@ npm run start -- --config config.json "你的问题"
 - `agent.maxSteps`：最大步数（默认 20）
 - `agent.restrictToWorkspace`：是否限制在工作空间内（默认 `true`）
 
+### 工具配置（`tools.json`）
+
+`tools.json` 用于声明 **所有工具**，每个工具都必须显式列出，用 `enabled` 控制启停。工具通过 **动态加载** 方式注册，不再在代码中硬编码注册列表。
+
+示例：
+
+```json
+{
+  "tools": [
+    {
+      "name": "read_file",
+      "enabled": true,
+      "module": "src/agent/tools/FileTool",
+      "export": "ReadFileTool"
+    },
+    {
+      "name": "finish",
+      "enabled": true,
+      "module": "src/agent/tools/FinishTool",
+      "export": "FinishTool"
+    }
+  ]
+}
+```
+
+字段说明：
+- `name`：工具名（必须与工具类实例的 `tool.name` 一致）
+- `enabled`：是否启用该工具
+- `module`：模块路径（相对项目根目录；必须位于 `src/agent/tools` 下）
+- `export`：模块内导出的工具类名
+
+注意：
+- `tools.json` 不存在会报错（与 `config.json` 一样是必需配置）
+- 禁用 `finish` 可能导致 Agent 无法正常结束
+- 构建产物下会优先加载 `dist/` 中的 `.js`，否则回退到 `src/` 中的 `.ts`
+
 ### 代码结构
 
 - `main.ts`：CLI 入口；加载配置 → `ProjectContext.init` → `AgentCore.run`
 - `src/env/ProjectContext.ts`：全局上下文（配置 + 路径解析后的绝对路径）
 - `src/config/loadConfig.ts`：配置读取与字段校验（JSON）
+- `src/config/loadToolsConfig.ts`：工具配置读取与字段校验（JSON）
 - `src/agent/AgentCore.ts`：Agent 主循环（history / tool calls / finish）
 - `src/agent/LlmClient.ts`：HTTP 调用（Node `fetch`），解析 tool_calls
 - `src/agent/ToolsManager.ts`：工具注册与执行
@@ -80,7 +119,7 @@ npm run start -- --config config.json "你的问题"
 
 ## 2) 给“我自己”的：进度记录与验证要求（新 Session 快速接手）
 
-### 当前进度（截至 2026-03-14）
+### 当前进度（截至 2026-03-15）
 
 - 已完成：将核心代码迁移到 `src/`，并新增配置体系
   - `ProjectContext`（`src/env/ProjectContext.ts`）统一保存 `config` 与解析后的 `paths`
@@ -89,6 +128,7 @@ npm run start -- --config config.json "你的问题"
 - 已完成：`npm run build` 可通过（`tsc -p tsconfig.json`）
 - 已完成：`LLMClient` 已改为 Node `fetch` 实现（不再依赖 HarmonyOS HTTP Kit）
 - 已注意：`config.json` 已加入 `.gitignore`，避免泄露密钥
+- 已完成：`tools.json` 驱动工具注册（动态加载），不再在代码中硬编码工具列表
 
 ### 编码约束（保持一致性）
 
@@ -97,6 +137,7 @@ npm run start -- --config config.json "你的问题"
 - 配置解析规则：
   - `agent.workDir/skillsDir/allowedDir` 均以 **config 文件所在目录** 为基准解析为绝对路径
   - 需要新增配置字段时：先更新 `src/env/ProjectContext.ts` 类型，再更新 `src/config/loadConfig.ts` 校验与默认值
+  - 工具配置新增字段时：同步更新 `src/config/loadToolsConfig.ts`
 
 ### 验证要求（每次改动后至少完成）
 
@@ -120,6 +161,5 @@ npm run start -- --config config.json "hello"
 
 ### 已知待改进点（可做为后续 TODO）
 
-- `AgentCore` 的 system prompt 文案仍偏 HarmonyOS 语境（不影响运行，但会影响模型行为）
 - 仓库根目录遗留空目录 `agent/`、`utils/`（已迁移到 `src/`）
 - 尚无测试用例；如后续引入测试，优先从配置加载与路径限制（`allowedDir`）开始补
