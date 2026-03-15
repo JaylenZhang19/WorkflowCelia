@@ -59,6 +59,18 @@
       "enabled": true,
       "module": "src/agent/tools/FinishTool",
       "export": "FinishTool"
+    },
+    {
+      "name": "photo_save",
+      "enabled": true,
+      "module": "src/agent/tools/PhotoTool",
+      "export": "PhotoSaveTool"
+    },
+    {
+      "name": "photo_retrieve",
+      "enabled": true,
+      "module": "src/agent/tools/PhotoTool",
+      "export": "PhotoRetrieveTool"
     }
   ]
 }
