@@ -63,3 +63,47 @@
 - `contact_add`
 - `contact_search`
 - `contact_delete`
+
+---
+
+## 短信（SMS）模拟应用
+
+位置：`src/mockapps/sms/SmsApp.ts`
+
+能力：
+- 发送短信（需要提供联系电话及内容）
+- 读取短信记录（支持通过电话、消息上限数、及时间戳范围过滤）
+- 删除短信记录（依电话号码全盘删除）
+
+实体属性：
+- `id`, `phoneNumber`, `content`, `timestamp`
+
+存储位置：
+- 持久化到 `agent.workDir` 下的 `mockapps/SMS/sms.json` 中，按电话号区分结构
+
+对应工具：
+- `sms_send`
+- `sms_read`
+- `sms_delete`
+
+---
+
+## 邮件（Email）模拟应用
+
+位置：`src/mockapps/email/EmailApp.ts`
+
+能力：
+- 发送邮件（`to`, `subject`, `content`必填，`cc`, `attachFile`可选）
+- 读取邮件（支持 `limit` 数量上限，支持 `unreadOnly` 仅看未读，支持按 `sender` 过滤。无过滤参数默认返回最新 30 封）
+- 根据唯一ID删除邮件
+
+实体属性：
+- `id`, `from`, `to`, `cc`, `subject`, `content`, `attachFile`, `isRead`, `timestamp`
+
+存储位置：
+- 持久化到 `agent.workDir` 下的 `mockapps/Email/emails.json`
+
+对应工具：
+- `email_send`
+- `email_read`
+- `email_delete`

@@ -95,6 +95,42 @@
       "enabled": true,
       "module": "src/agent/tools/ContactTool",
       "export": "ContactDeleteTool"
+    },
+    {
+      "name": "sms_send",
+      "enabled": true,
+      "module": "src/agent/tools/SmsTool",
+      "export": "SmsSendTool"
+    },
+    {
+      "name": "sms_read",
+      "enabled": true,
+      "module": "src/agent/tools/SmsTool",
+      "export": "SmsReadTool"
+    },
+    {
+      "name": "sms_delete",
+      "enabled": true,
+      "module": "src/agent/tools/SmsTool",
+      "export": "SmsDeleteTool"
+    },
+    {
+      "name": "email_send",
+      "enabled": true,
+      "module": "src/agent/tools/EmailTool",
+      "export": "EmailSendTool"
+    },
+    {
+      "name": "email_read",
+      "enabled": true,
+      "module": "src/agent/tools/EmailTool",
+      "export": "EmailReadTool"
+    },
+    {
+      "name": "email_delete",
+      "enabled": true,
+      "module": "src/agent/tools/EmailTool",
+      "export": "EmailDeleteTool"
     }
   ]
 }
