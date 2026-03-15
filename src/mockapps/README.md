@@ -107,3 +107,25 @@
 - `email_send`
 - `email_read`
 - `email_delete`
+
+---
+
+## 日程（Calendar）模拟应用
+
+位置：`src/mockapps/calendar/CalendarApp.ts`
+
+能力：
+- 添加日程（`title`，`startTime`必填，`endTime`默认1小时后，可支持 `location`，`attendance`，`notes`）
+- 读取日程（支持 `startTime` 与 `endTime` 区间过滤）
+- 根据唯一ID删除日程
+
+实体属性：
+- `id`, `title`, `startTime`, `endTime`, `location`, `attendance`, `notes`
+
+存储位置：
+- 持久化到 `agent.workDir` 下的 `mockapps/Calendar/events.json`
+
+对应工具：
+- `calendar_add`
+- `calendar_read`
+- `calendar_delete`

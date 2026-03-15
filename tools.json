@@ -131,6 +131,24 @@
       "enabled": true,
       "module": "src/agent/tools/EmailTool",
       "export": "EmailDeleteTool"
+    },
+    {
+      "name": "calendar_add",
+      "enabled": true,
+      "module": "src/agent/tools/CalendarTool",
+      "export": "CalendarAddTool"
+    },
+    {
+      "name": "calendar_read",
+      "enabled": true,
+      "module": "src/agent/tools/CalendarTool",
+      "export": "CalendarReadTool"
+    },
+    {
+      "name": "calendar_delete",
+      "enabled": true,
+      "module": "src/agent/tools/CalendarTool",
+      "export": "CalendarDeleteTool"
     }
   ]
 }
