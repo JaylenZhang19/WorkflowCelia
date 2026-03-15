@@ -169,30 +169,13 @@ npm run start -- --config config.json "hello"
 
 ---
 
-## 3) 备忘录（Memo）模拟应用
+## 3) 模拟应用（Mock Apps）
 
-位置：`src/mockapps/memo/MemoApp.ts`
-
-能力：
-- 读取备忘录（按名称）
-- 写入备忘录（可选名称；无名称则新建）
-- 追加写入备忘录（按名称）
-- 删除备忘录（按名称）
-- 检索备忘录（列出所有 `.txt` 文件名）
-
-存储位置：
-- 默认写入到 `agent.workDir` 下的 `mockapps/memo/` 目录（例如 `.agent-work/mockapps/memo`）
-
-对应工具：
-- `memo_read`
-- `memo_write`
-- `memo_append`
-- `memo_delete`
-- `memo_list`
+关于详细的模拟应用实现（包括备忘录 Memo, 相册 Photo, 联系人 Contact 等能力说明与使用方法），请参阅 [`src/mockapps/README.md`](./src/mockapps/README.md)。
 
 ---
 
-## 4) 模拟应用规范模板
+## 6) 模拟应用规范模板
 
 推荐目录结构：
 - `src/mockapps/<appName>/`

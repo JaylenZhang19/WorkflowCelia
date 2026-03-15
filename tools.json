@@ -71,6 +71,30 @@
       "enabled": true,
       "module": "src/agent/tools/PhotoTool",
       "export": "PhotoRetrieveTool"
+    },
+    {
+      "name": "contact_add",
+      "enabled": true,
+      "module": "src/agent/tools/ContactTool",
+      "export": "ContactAddTool"
+    },
+    {
+      "name": "contact_search",
+      "enabled": true,
+      "module": "src/agent/tools/ContactTool",
+      "export": "ContactSearchTool"
+    },
+    {
+      "name": "photo_delete",
+      "enabled": true,
+      "module": "src/agent/tools/PhotoTool",
+      "export": "PhotoDeleteTool"
+    },
+    {
+      "name": "contact_delete",
+      "enabled": true,
+      "module": "src/agent/tools/ContactTool",
+      "export": "ContactDeleteTool"
     }
   ]
 }

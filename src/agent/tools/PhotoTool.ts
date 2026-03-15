@@ -6,24 +6,24 @@ import { PhotoApp } from '../../mockapps/photo/PhotoApp';
  */
 export class PhotoSaveTool extends Tool {
   public readonly name = 'photo_save';
-  public readonly description = 'Save a photo. If name is provided, save with that name; otherwise create a new one.';
+  public readonly description = 'Save a photo by downloading from a URL or copying from a local file path. If name is provided, save with that name; otherwise create a new one.';
   public readonly parameters = {
     type: 'object',
     properties: {
       name: { type: 'string', description: 'Optional photo name (png file name). If omitted, a new photo name is generated.' },
-      content: { type: 'string', description: 'Photo content (required base64 or placeholder text)' }
+      sourceUrlOrPath: { type: 'string', description: 'Photo source URL (http/https) or local absolute file path (required)' }
     },
-    required: ['content']
+    required: ['sourceUrlOrPath']
   };
 
   constructor(private workspace: string | null, private allowedDir: string | null) {
     super();
   }
 
-  async execute(args: { name?: string; content: string }): Promise<string> {
+  async execute(args: { name?: string; sourceUrlOrPath: string }): Promise<string> {
     try {
       const app = new PhotoApp();
-      const filename = app.savePhoto({ name: args.name, content: args.content });
+      const filename = await app.savePhoto({ name: args.name, sourceUrlOrPath: args.sourceUrlOrPath });
       return `Photo saved: ${filename}`;
     } catch (e) {
       return `Error saving photo: ${e instanceof Error ? e.message : String(e)}`;
@@ -54,6 +54,35 @@ export class PhotoRetrieveTool extends Tool {
       return items.length > 0 ? items.join('\n') : 'No photos found';
     } catch (e) {
       return `Error retrieving photos: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+}
+
+/**
+ * Tool for deleting a photo
+ */
+export class PhotoDeleteTool extends Tool {
+  public readonly name = 'photo_delete';
+  public readonly description = 'Delete a photo by name.';
+  public readonly parameters = {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Photo name (png file name)' }
+    },
+    required: ['name']
+  };
+
+  constructor() {
+    super();
+  }
+
+  async execute(args: { name: string }): Promise<string> {
+    try {
+      const app = new PhotoApp();
+      const filename = app.deletePhoto(args.name);
+      return `Photo deleted: ${filename}`;
+    } catch (e) {
+      return `Error deleting photo: ${e instanceof Error ? e.message : String(e)}`;
     }
   }
 }

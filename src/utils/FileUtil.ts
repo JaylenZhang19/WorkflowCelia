@@ -40,4 +40,8 @@ export class FileUtil {
   public static removeFile(path: string): void {
     fs.unlinkSync(path);
   }
+
+  public static copyFile(src: string, dest: string): void {
+    fs.copyFileSync(src, dest);
+  }
 }

@@ -3,7 +3,7 @@ import { ProjectContext } from '../../env/ProjectContext';
 
 export interface PhotoSaveParams {
   name?: string;
-  content: string;
+  sourceUrlOrPath: string;
 }
 
 export class PhotoApp {
@@ -39,15 +39,43 @@ export class PhotoApp {
     return raw.endsWith('.png') ? raw : `${raw}.png`;
   }
 
-  public savePhoto(params: PhotoSaveParams): string {
-    const content = params.content?.trim();
-    if (!content) {
-      throw new Error('Photo content is required.');
+  public async savePhoto(params: PhotoSaveParams): Promise<string> {
+    const source = params.sourceUrlOrPath?.trim();
+    if (!source) {
+      throw new Error('Photo source URL or path is required.');
     }
     const dir = this.getStorageDir();
     const filename = this.normalizeName(params.name);
     const filePath = `${dir}/${filename}`;
-    FileUtil.writeTextFile(filePath, content);
+    
+    if (source.startsWith('http://') || source.startsWith('https://')) {
+      // Download from URL
+      const response = await fetch(source);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch photo from URL: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      import('fs').then(fs => fs.promises.writeFile(filePath, buffer));
+    } else {
+      // Copy from local path
+      if (!FileUtil.exists(source)) {
+         throw new Error(`Local source file not found: ${source}`);
+      }
+      FileUtil.copyFile(source, filePath);
+    }
+    
+    return filename;
+  }
+
+  public deletePhoto(name: string): string {
+    const dir = this.getStorageDir();
+    const filename = this.normalizeName(name);
+    const filePath = `${dir}/${filename}`;
+    if (!FileUtil.exists(filePath)) {
+      throw new Error(`Photo not found: ${filename}`);
+    }
+    FileUtil.removeFile(filePath);
     return filename;
   }
 
