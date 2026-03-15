@@ -106,8 +106,10 @@ npm run start -- --config config.json "你的问题"
 - `src/config/loadConfig.ts`：配置读取与字段校验（JSON）
 - `src/config/loadToolsConfig.ts`：工具配置读取与字段校验（JSON）
 - `src/agent/AgentCore.ts`：Agent 主循环（history / tool calls / finish）
+- `src/agent/AgentQueue.ts`：消息队列（串行化用户与心跳任务）
 - `src/agent/LlmClient.ts`：HTTP 调用（Node `fetch`），解析 tool_calls
 - `src/agent/ToolsManager.ts`：工具注册与执行
+- `src/agent/HeartbeatScheduler.ts`：心跳调度与 HEARTBEAT.md 解析
 - `src/agent/tools/*`：内置工具（read/write/edit/list/finish）
 - `src/mockapps/*`：模拟的系统/三方应用（供 tools 调用）
 - `src/agent/SkillLoader.ts`：从 `skillsDir` 加载技能元信息与文档
@@ -131,6 +133,7 @@ npm run start -- --config config.json "你的问题"
 - 已注意：`config.json` 已加入 `.gitignore`，避免泄露密钥
 - 已完成：`tools.json` 驱动工具注册（动态加载），不再在代码中硬编码工具列表
 - 已完成：模拟应用 `mockapps/memo`（备忘录）与对应工具
+- 已完成：心跳逻辑独立化 + 消息队列机制（用户输入与心跳任务串行化）
 
 ### 编码约束（保持一致性）
 

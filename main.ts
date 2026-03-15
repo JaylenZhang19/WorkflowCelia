@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import * as readline from 'readline';
 import { loadProjectConfig } from './src/config/loadConfig';
 import { ProjectContext } from './src/env/ProjectContext';
 import { AgentCore } from './src/agent/AgentCore';
@@ -37,19 +38,49 @@ async function main(): Promise<void> {
 
   fs.mkdirSync(ProjectContext.getInstance().paths.agentWorkDir, { recursive: true });
 
+  const ctx = ProjectContext.getInstance();
+  const agent = new AgentCore(ctx.paths.agentWorkDir);
+
   if (!input) {
     logger.info('Main', `Loaded config: ${ProjectContext.getInstance().paths.configPath}`);
     logger.info('Main', `Agent workDir: ${ProjectContext.getInstance().paths.agentWorkDir}`);
-    console.log('Usage:');
-    console.log('  node dist/main.js --config config.json "你的问题"');
-    console.log('  # or (dev)');
-    console.log('  npx tsx main.ts --config config.json "你的问题"');
+    console.log('Entering interactive REPL mode. Type "exit" or "quit" to stop.');
+    console.log('Heartbeat scheduler initialized in background.\n');
+    
+    agent.startHeartbeat();
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      prompt: 'Agent> '
+    });
+
+    rl.prompt();
+
+    rl.on('line', (line) => {
+      const trimmed = line.trim();
+      if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'quit') {
+        agent.stopHeartbeat();
+        rl.close();
+        return;
+      }
+      if (trimmed) {
+        agent.submitTask(trimmed, undefined, ctx.config.agent.maxSteps ?? 20)
+             .then(res => { console.log(`\n✅ 结果: ${res}\n`); rl.prompt(); })
+             .catch(err => { console.error(`\n❌ 报错: ${err}\n`); rl.prompt(); });
+      } else {
+        rl.prompt();
+      }
+    });
+
+    rl.on('close', () => {
+      console.log('Goodbye!');
+      process.exit(0);
+    });
     return;
   }
 
-  const ctx = ProjectContext.getInstance();
-  const agent = new AgentCore(ctx.paths.agentWorkDir);
-  const result = await agent.run(input, undefined, ctx.config.agent.maxSteps ?? 20);
+  const result = await agent.submitTask(input, undefined, ctx.config.agent.maxSteps ?? 20);
   process.stdout.write(result + '\n');
 }
 

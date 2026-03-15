@@ -43,6 +43,7 @@ export function loadProjectConfig(configPath: string): ProjectConfig {
   const allowedDir = agent.allowedDir == null ? null : String(agent.allowedDir);
   const maxSteps = agent.maxSteps == null ? 20 : Number(agent.maxSteps);
   const restrictToWorkspace = agent.restrictToWorkspace == null ? true : Boolean(agent.restrictToWorkspace);
+  const heartbeatInterval = agent.heartbeatInterval == null ? 30 : Number(agent.heartbeatInterval);
 
   return {
     model: {
@@ -55,7 +56,8 @@ export function loadProjectConfig(configPath: string): ProjectConfig {
       skillsDir: String(agent.skillsDir),
       allowedDir: allowedDir && allowedDir.trim().length > 0 ? allowedDir : null,
       maxSteps: Number.isFinite(maxSteps) && maxSteps > 0 ? maxSteps : 20,
-      restrictToWorkspace
+      restrictToWorkspace,
+      heartbeatInterval: Number.isFinite(heartbeatInterval) && heartbeatInterval > 0 ? heartbeatInterval : 30
     }
   };
 }

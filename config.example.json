@@ -9,7 +9,8 @@
     "skillsDir": "./skills",
     "allowedDir": "./.agent-work",
     "maxSteps": 20,
-    "restrictToWorkspace": true
+    "restrictToWorkspace": true,
+    "heartbeatInterval": 30
   }
 }
 

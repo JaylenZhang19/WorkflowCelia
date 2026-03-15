@@ -1,6 +1,8 @@
 import { llmClient } from './LlmClient';
 import { FileUtil } from '../utils';
 import { logger } from '../utils';
+import { AgentQueue } from './AgentQueue';
+import { HeartbeatScheduler } from './HeartbeatScheduler';
 import { SkillLoader } from './SkillLoader';
 import { ToolsManager } from './ToolsManager';
 import { AgentStepEvent, ChatResponse, Message, ToolCallRequest } from './types';
@@ -22,6 +24,8 @@ export class AgentCore {
   private skillLoader: SkillLoader;
   private toolsManager: ToolsManager;
   private initialized: boolean = false;
+  private queue: AgentQueue = new AgentQueue();
+  private heartbeat: HeartbeatScheduler;
 
   constructor(workspace: string) {
     this.workspace = workspace;
@@ -35,6 +39,21 @@ export class AgentCore {
       toolsConfig.tools,
       ctx.paths.projectRoot
     );
+    this.heartbeat = new HeartbeatScheduler({
+      workspace: this.workspace,
+      intervalMinutes: ctx.config.agent.heartbeatInterval || 30,
+      ensureInit: async () => this.init(),
+      getSystemPrompt: () => this.getSystemPromptText(),
+      getToolSchemas: () => this.toolsManager.getToolSchemas(),
+      enqueue: (task) => { this.queue.enqueue(task); },
+      onTask: (task) => {
+        this.submitTask(task, (step) => {
+          if (step.type === 'action' || step.type === 'final') {
+            logger.info(TAG, `[AutoTask] ${step.title}: ${step.content}`);
+          }
+        });
+      }
+    });
     logger.info(TAG, `使用 ${ctx.config.model.modelName} 作为 API 模型`);
   }
 
@@ -53,6 +72,10 @@ export class AgentCore {
     this.conversationHistory = [
       { role: "system", content: systemPrompt }
     ];
+  }
+
+  public getSystemPromptText(): string {
+    return this.buildSystemPrompt();
   }
 
   private buildSystemPrompt(): string {
@@ -86,16 +109,18 @@ ${skillMetadata}
 3. 变量跨步骤保留
 4. 无脚本原则， HarmonyOS 环境下严禁执行 Shell 命令或动态脚本。所有操作必须通过工具映射到 ArkTS 接口。
 5. 工具调用失败时，分析错误后换方法重试
-6. 主观判断由你直接思考完成，不写代码判断`;
+6. 主观判断由你直接思考完成，不写代码判断
+7. 【HEARTBEAT 调度】如果用户要求配置定时任务或条件触发任务（例如定期检查邮件），你需要使用相关工具修改沙箱根目录（${ProjectContext.getInstance().paths.agentWorkDir}）下的 HEARTBEAT.md 文件。将触发条件和发生时需要执行的具体 prompt / task 写进 HEARTBEAT.md 文件中（最好具备一定的格式说明），这个文件中的任务后续会被调度器解析并自动执行。不要试图在当前对话内停留或写循环脚本。`;
   }
 
-  public async run(
-    userInput: string,
-    onStep?: (step: AgentStepEvent) => void,
-    maxSteps: number = 20
-  ): Promise<string> {
+  public submitTask(userInput: string, onStep?: (step: AgentStepEvent) => void, maxSteps: number = 20): Promise<string> {
+    logger.info(TAG, `📥 Task submitted: ${userInput}`);
+    return this.queue.enqueue(() => this.executeSingleTask(userInput, onStep, maxSteps));
+  }
+
+  private async executeSingleTask(userInput: string, onStep?: (step: AgentStepEvent) => void, maxSteps: number = 20): Promise<string> {
     await this.init();
-    logger.info(TAG, `====== NEW TASK: ${userInput} ======`);
+    logger.info(TAG, `====== STARTING TASK: ${userInput} ======`);
 
     const currentTime: string = new Date().toLocaleString();
     const initialHistoryLen: number = this.conversationHistory.length;
@@ -228,6 +253,14 @@ ${skillMetadata}
       timestamp: Date.now()
     });
     return "❌ 任务超时：超过最大步数限制。";
+  }
+
+  public startHeartbeat(): void {
+    this.heartbeat.start();
+  }
+
+  public stopHeartbeat(): void {
+    this.heartbeat.stop();
   }
 
   private async saveLogs(history: Message[]): Promise<void> {

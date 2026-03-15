@@ -12,6 +12,7 @@ export interface AgentConfig {
   allowedDir?: string | null;
   maxSteps?: number;
   restrictToWorkspace?: boolean;
+  heartbeatInterval?: number;
 }
 
 export interface ProjectConfig {
