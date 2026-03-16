@@ -1,8 +1,8 @@
 {
   "model": {
-    "apiUrl": "https://api.openai.com/v1/chat/completions",
+    "apiUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
     "apiKey": "YOUR_API_KEY",
-    "modelName": "gpt-4.1-mini"
+    "modelName": "qwen3.5-flash"
   },
   "agent": {
     "workDir": "./.agent-work",

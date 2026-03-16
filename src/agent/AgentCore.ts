@@ -36,8 +36,7 @@ export class AgentCore {
     this.toolsManager = new ToolsManager(
       this.workspace,
       ctx.paths.allowedDir,
-      toolsConfig.tools,
-      ctx.paths.projectRoot
+      toolsConfig.tools
     );
     this.heartbeat = new HeartbeatScheduler({
       workspace: this.workspace,

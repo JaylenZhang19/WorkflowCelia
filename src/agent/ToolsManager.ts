@@ -1,9 +1,7 @@
-import path from 'path';
-import fs from 'fs';
-import { pathToFileURL } from 'url';
 import { Tool } from './tools/BaseTool';
 import { logger } from '../utils';
 import { ToolConfigItem } from '../config/loadToolsConfig';
+import { createToolByName } from './toolRegistry';
 
 /**
  * 智能助手工具管理器
@@ -13,7 +11,6 @@ export class ToolsManager {
   private allowedDir: string | null = null;
   private tools: Map<string, Tool> = new Map();
   private toolConfig: ToolConfigItem[] = [];
-  private projectRoot: string | null = null;
   private initialized: boolean = false;
 
   /**
@@ -26,84 +23,30 @@ export class ToolsManager {
   constructor(
     workspace: string | null = null,
     allowedDir: string | null = null,
-    toolConfig: ToolConfigItem[] = [],
-    projectRoot: string | null = null
+    toolConfig: ToolConfigItem[] = []
   ) {
     this.workspace = workspace;
     this.allowedDir = allowedDir;
     this.toolConfig = toolConfig;
-    this.projectRoot = projectRoot;
-  }
-
-  private resolveModuleFile(modulePath: string, absPath: string): string {
-    const projectRoot = this.projectRoot ? path.resolve(this.projectRoot) : process.cwd();
-    const base = absPath;
-    const candidates: string[] = [];
-
-    const pushIf = (p: string) => {
-      if (!candidates.includes(p)) candidates.push(p);
-    };
-
-    pushIf(base);
-    pushIf(`${base}.js`);
-    pushIf(`${base}.ts`);
-
-    if (modulePath.startsWith('src/')) {
-      const distBase = path.resolve(projectRoot, 'dist', modulePath);
-      pushIf(distBase);
-      pushIf(`${distBase}.js`);
-    } else if (base.startsWith(path.resolve(projectRoot, 'src') + path.sep)) {
-      const relFromSrc = path.relative(path.resolve(projectRoot, 'src'), base);
-      const distBase = path.resolve(projectRoot, 'dist', 'src', relFromSrc);
-      pushIf(distBase);
-      pushIf(`${distBase}.js`);
-    }
-
-    const found = candidates.find((p) => fs.existsSync(p));
-    return found ?? base;
-  }
-
-  private ensureSafeModulePath(modulePath: string): string {
-    const projectRoot = this.projectRoot ? path.resolve(this.projectRoot) : process.cwd();
-    const abs = path.isAbsolute(modulePath) ? modulePath : path.resolve(projectRoot, modulePath);
-    const toolsDir = path.resolve(projectRoot, 'src/agent/tools');
-    if (!abs.startsWith(toolsDir)) {
-      throw new Error(`Tool module path must be under ${toolsDir}: ${modulePath}`);
-    }
-    return abs;
   }
 
   /**
-   * 从 tools.json 动态加载并注册工具
+   * 从 tools.json 静态创建并注册工具（不使用动态 import）
    */
   public async init(): Promise<void> {
     if (this.initialized) return;
 
     for (const item of this.toolConfig) {
       if (!item.enabled) continue;
-      try {
-        const safeAbs = this.ensureSafeModulePath(item.module);
-        const resolved = this.resolveModuleFile(item.module, safeAbs);
-        const mod = await import(pathToFileURL(resolved).href);
-        const ToolCtor = mod[item.export];
-        if (!ToolCtor) {
-          logger.warn('ToolsManager', `Export '${item.export}' not found in ${item.module}`);
-          continue;
-        }
-        const tool: Tool = new ToolCtor(this.workspace, this.allowedDir);
-        if (tool.name !== item.name) {
-          logger.warn(
-            'ToolsManager',
-            `Tool name mismatch for ${item.module}:${item.export} (config: ${item.name}, actual: ${tool.name})`
-          );
-        }
-        this.registerTool(tool);
-      } catch (e) {
-        logger.warn(
-          'ToolsManager',
-          `Failed to load tool ${item.name} from ${item.module}:${item.export} - ${e instanceof Error ? e.message : String(e)}`
-        );
+      const tool = createToolByName(item.name, this.workspace, this.allowedDir);
+      if (!tool) {
+        logger.warn('ToolsManager', `Tool '${item.name}' not found in static registry (enabled=true)`);
+        continue;
       }
+      if (tool.name !== item.name) {
+        logger.warn('ToolsManager', `Tool name mismatch (config: ${item.name}, actual: ${tool.name})`);
+      }
+      this.registerTool(tool);
     }
 
     this.initialized = true;

@@ -4,8 +4,12 @@ import path from 'path';
 export interface ToolConfigItem {
   name: string;
   enabled: boolean;
-  module: string;
-  export: string;
+  /**
+   * Legacy fields from the previous dynamic loader. They are now optional and ignored
+   * by the static tool registry, but we keep them for backward compatibility.
+   */
+  module?: string;
+  export?: string;
 }
 
 export interface ToolsConfig {
@@ -39,7 +43,7 @@ export function loadToolsConfig(configPath: string): ToolsConfig {
     throw new Error("Invalid tools config: missing field 'tools'");
   }
   if (!Array.isArray(toolsRaw)) {
-    throw new Error("Invalid tools config field 'tools': expected an array of {name, enabled, module, export}");
+    throw new Error("Invalid tools config field 'tools': expected an array of {name, enabled}");
   }
 
   const tools: ToolConfigItem[] = toolsRaw.map((item, idx) => {
@@ -51,15 +55,15 @@ export function loadToolsConfig(configPath: string): ToolsConfig {
     if (!name) {
       throw new Error(`Invalid tools config item at index ${idx}: missing 'name'`);
     }
-    const modulePath = String(obj.module ?? '').trim();
-    if (!modulePath) {
-      throw new Error(`Invalid tools config item at index ${idx}: missing 'module'`);
-    }
-    const exportName = String(obj.export ?? '').trim();
-    if (!exportName) {
-      throw new Error(`Invalid tools config item at index ${idx}: missing 'export'`);
-    }
     const enabled = Boolean(obj.enabled);
+
+    const modulePathRaw = obj.module;
+    const exportNameRaw = obj.export;
+    const modulePath =
+      typeof modulePathRaw === 'string' && modulePathRaw.trim() ? modulePathRaw.trim() : undefined;
+    const exportName =
+      typeof exportNameRaw === 'string' && exportNameRaw.trim() ? exportNameRaw.trim() : undefined;
+
     return { name, enabled, module: modulePath, export: exportName };
   });
 

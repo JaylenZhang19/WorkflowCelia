@@ -2,153 +2,103 @@
   "tools": [
     {
       "name": "read_file",
-      "enabled": true,
-      "module": "src/agent/tools/FileTool",
-      "export": "ReadFileTool"
+      "enabled": true
     },
     {
       "name": "write_file",
-      "enabled": true,
-      "module": "src/agent/tools/FileTool",
-      "export": "WriteFileTool"
+      "enabled": true
     },
     {
       "name": "edit_file",
-      "enabled": true,
-      "module": "src/agent/tools/FileTool",
-      "export": "EditFileTool"
+      "enabled": true
     },
     {
       "name": "list_dir",
-      "enabled": true,
-      "module": "src/agent/tools/FileTool",
-      "export": "ListDirTool"
+      "enabled": true
     },
     {
       "name": "memo_read",
-      "enabled": true,
-      "module": "src/agent/tools/MemoTool",
-      "export": "MemoReadTool"
+      "enabled": true
     },
     {
       "name": "memo_write",
-      "enabled": true,
-      "module": "src/agent/tools/MemoTool",
-      "export": "MemoWriteTool"
+      "enabled": true
     },
     {
       "name": "memo_append",
-      "enabled": true,
-      "module": "src/agent/tools/MemoTool",
-      "export": "MemoAppendTool"
+      "enabled": true
     },
     {
       "name": "memo_delete",
-      "enabled": true,
-      "module": "src/agent/tools/MemoTool",
-      "export": "MemoDeleteTool"
+      "enabled": true
     },
     {
       "name": "memo_list",
-      "enabled": true,
-      "module": "src/agent/tools/MemoTool",
-      "export": "MemoListTool"
+      "enabled": true
     },
     {
       "name": "finish",
-      "enabled": true,
-      "module": "src/agent/tools/FinishTool",
-      "export": "FinishTool"
+      "enabled": true
     },
     {
       "name": "photo_save",
-      "enabled": true,
-      "module": "src/agent/tools/PhotoTool",
-      "export": "PhotoSaveTool"
+      "enabled": true
     },
     {
       "name": "photo_retrieve",
-      "enabled": true,
-      "module": "src/agent/tools/PhotoTool",
-      "export": "PhotoRetrieveTool"
+      "enabled": true
     },
     {
       "name": "contact_add",
-      "enabled": true,
-      "module": "src/agent/tools/ContactTool",
-      "export": "ContactAddTool"
+      "enabled": true
     },
     {
       "name": "contact_search",
-      "enabled": true,
-      "module": "src/agent/tools/ContactTool",
-      "export": "ContactSearchTool"
+      "enabled": true
     },
     {
       "name": "photo_delete",
-      "enabled": true,
-      "module": "src/agent/tools/PhotoTool",
-      "export": "PhotoDeleteTool"
+      "enabled": true
     },
     {
       "name": "contact_delete",
-      "enabled": true,
-      "module": "src/agent/tools/ContactTool",
-      "export": "ContactDeleteTool"
+      "enabled": true
     },
     {
       "name": "sms_send",
-      "enabled": true,
-      "module": "src/agent/tools/SmsTool",
-      "export": "SmsSendTool"
+      "enabled": true
     },
     {
       "name": "sms_read",
-      "enabled": true,
-      "module": "src/agent/tools/SmsTool",
-      "export": "SmsReadTool"
+      "enabled": true
     },
     {
       "name": "sms_delete",
-      "enabled": true,
-      "module": "src/agent/tools/SmsTool",
-      "export": "SmsDeleteTool"
+      "enabled": true
     },
     {
       "name": "email_send",
-      "enabled": true,
-      "module": "src/agent/tools/EmailTool",
-      "export": "EmailSendTool"
+      "enabled": true
     },
     {
       "name": "email_read",
-      "enabled": true,
-      "module": "src/agent/tools/EmailTool",
-      "export": "EmailReadTool"
+      "enabled": true
     },
     {
       "name": "email_delete",
-      "enabled": true,
-      "module": "src/agent/tools/EmailTool",
-      "export": "EmailDeleteTool"
+      "enabled": true
     },
     {
       "name": "calendar_add",
-      "enabled": true,
-      "module": "src/agent/tools/CalendarTool",
-      "export": "CalendarAddTool"
+      "enabled": true
     },
     {
       "name": "calendar_read",
-      "enabled": true,
-      "module": "src/agent/tools/CalendarTool",
-      "export": "CalendarReadTool"
+      "enabled": true
     },
     {
       "name": "calendar_delete",
-      "enabled": true,
-      "module": "src/agent/tools/CalendarTool",
-      "export": "CalendarDeleteTool"
+      "enabled": true
     }
   ]
 }

@@ -65,7 +65,7 @@ npm run start -- --config config.json "你的问题"
 
 ### 工具配置（`tools.json`）
 
-`tools.json` 用于声明 **所有工具**，每个工具都必须显式列出，用 `enabled` 控制启停。工具通过 **动态加载** 方式注册，不再在代码中硬编码注册列表。
+`tools.json` 用于声明 **所有工具**，每个工具都必须显式列出，用 `enabled` 控制启停。工具通过 **静态注册表** 方式创建（不使用动态 import），避免运行时因为路径/产物差异导致工具加载失败。
 
 示例：
 
@@ -74,15 +74,11 @@ npm run start -- --config config.json "你的问题"
   "tools": [
     {
       "name": "read_file",
-      "enabled": true,
-      "module": "src/agent/tools/FileTool",
-      "export": "ReadFileTool"
+      "enabled": true
     },
     {
       "name": "finish",
-      "enabled": true,
-      "module": "src/agent/tools/FinishTool",
-      "export": "FinishTool"
+      "enabled": true
     }
   ]
 }
@@ -91,13 +87,14 @@ npm run start -- --config config.json "你的问题"
 字段说明：
 - `name`：工具名（必须与工具类实例的 `tool.name` 一致）
 - `enabled`：是否启用该工具
-- `module`：模块路径（相对项目根目录；必须位于 `src/agent/tools` 下）
-- `export`：模块内导出的工具类名
+
+兼容字段（历史遗留，可选）：
+- `module` / `export`：旧版动态加载使用的字段；当前版本会忽略它们（保留仅用于兼容旧配置文件）。
 
 注意：
 - `tools.json` 不存在会报错（与 `config.json` 一样是必需配置）
 - 禁用 `finish` 可能导致 Agent 无法正常结束
-- 构建产物下会优先加载 `dist/` 中的 `.js`，否则回退到 `src/` 中的 `.ts`
+- 工具是否可用取决于代码内的静态工具注册表（见 `src/agent/toolRegistry.ts`）
 
 ### 代码结构
 
@@ -131,7 +128,7 @@ npm run start -- --config config.json "你的问题"
 - 已完成：`npm run build` 可通过（`tsc -p tsconfig.json`）
 - 已完成：`LLMClient` 已改为 Node `fetch` 实现（不再依赖 HarmonyOS HTTP Kit）
 - 已注意：`config.json` 已加入 `.gitignore`，避免泄露密钥
-- 已完成：`tools.json` 驱动工具注册（动态加载），不再在代码中硬编码工具列表
+- 已完成：`tools.json` 驱动工具启停（静态注册表），不再在运行时动态加载模块
 - 已完成：模拟应用 `mockapps/memo`（备忘录）与对应工具
 - 已完成：心跳逻辑独立化 + 消息队列机制（用户输入与心跳任务串行化）
 
@@ -192,4 +189,4 @@ npm run start -- --config config.json "hello"
 工具接入：
 - 在 `src/agent/tools/` 内新增 `<AppName>Tool.ts`
 - 工具只调用 mock app 的方法，不直接操作文件
-- `tools.json` 中显式注册每个工具（包含 `name` / `enabled` / `module` / `export`）
+- `tools.json` 中显式注册每个工具（至少包含 `name` / `enabled`）
