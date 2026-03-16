@@ -1,4 +1,4 @@
-import { FileUtil } from '../../utils';
+import { FileUtil, isPathAllowed } from '../../utils';
 import { ProjectContext } from '../../env/ProjectContext';
 
 export interface PhotoSaveParams {
@@ -18,8 +18,8 @@ export class PhotoApp {
     }
     const dir = `${workspace}/mockedapp/Photo`;
     
-    const allowedDir = context.paths.allowedDir;
-    if (allowedDir && !dir.startsWith(allowedDir)) {
+    const allowedDirs = context.paths.allowedDirs;
+    if (!isPathAllowed(dir, allowedDirs)) {
       throw new Error('Permission Denied: Photo storage is outside allowed directory.');
     }
     if (!FileUtil.exists(dir)) {

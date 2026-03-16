@@ -1,4 +1,4 @@
-import { FileUtil } from '../../utils';
+import { FileUtil, isPathAllowed } from '../../utils';
 
 export interface MemoWriteParams {
   name?: string;
@@ -12,11 +12,11 @@ export interface MemoAppendParams {
 
 export class MemoApp {
   private workspace: string | null;
-  private allowedDir: string | null;
+  private allowedDirs: string[] | null;
 
-  constructor(workspace: string | null, allowedDir: string | null) {
+  constructor(workspace: string | null, allowedDirs: string[] | null) {
     this.workspace = workspace;
-    this.allowedDir = allowedDir;
+    this.allowedDirs = allowedDirs;
   }
 
   private getStorageDir(): string {
@@ -24,7 +24,7 @@ export class MemoApp {
       throw new Error('Workspace is not set.');
     }
     const dir = `${this.workspace}/mockapps/memo`;
-    if (this.allowedDir && !dir.startsWith(this.allowedDir)) {
+    if (!isPathAllowed(dir, this.allowedDirs)) {
       throw new Error('Permission Denied: Memo storage is outside allowed directory.');
     }
     if (!FileUtil.exists(dir)) {

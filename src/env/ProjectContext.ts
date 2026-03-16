@@ -9,7 +9,7 @@ export interface ModelConfig {
 export interface AgentConfig {
   workDir: string;
   skillsDir: string;
-  allowedDir?: string | null;
+  allowedDir?: string[] | null;
   maxSteps?: number;
   restrictToWorkspace?: boolean;
   heartbeatInterval?: number;
@@ -26,7 +26,7 @@ export interface ProjectPaths {
   toolsConfigPath: string;
   agentWorkDir: string;
   skillsDir: string;
-  allowedDir: string | null;
+  allowedDirs: string[] | null;
 }
 
 export class ProjectContext {
@@ -48,8 +48,8 @@ export class ProjectContext {
 
     const agentWorkDirAbs = path.resolve(configDir, params.config.agent.workDir);
     const skillsDirAbs = path.resolve(configDir, params.config.agent.skillsDir);
-    const allowedDirAbs = params.config.agent.allowedDir
-      ? path.resolve(configDir, params.config.agent.allowedDir)
+    const allowedDirsAbs = params.config.agent.allowedDir
+      ? params.config.agent.allowedDir.map((dir) => path.resolve(configDir, dir))
       : null;
 
     const pathsObj: ProjectPaths = {
@@ -58,7 +58,7 @@ export class ProjectContext {
       toolsConfigPath: toolsConfigPathAbs,
       agentWorkDir: agentWorkDirAbs,
       skillsDir: skillsDirAbs,
-      allowedDir: allowedDirAbs
+      allowedDirs: allowedDirsAbs
     };
 
     ProjectContext.instance = new ProjectContext(params.config, pathsObj);

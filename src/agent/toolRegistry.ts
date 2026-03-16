@@ -9,7 +9,7 @@ import { MemoAppendTool, MemoDeleteTool, MemoListTool, MemoReadTool, MemoWriteTo
 import { PhotoDeleteTool, PhotoRetrieveTool, PhotoSaveTool } from './tools/PhotoTool';
 import { SmsDeleteTool, SmsReadTool, SmsSendTool } from './tools/SmsTool';
 
-export type ToolFactory = (workspace: string | null, allowedDir: string | null) => Tool;
+export type ToolFactory = (workspace: string | null, allowedDirs: string[] | null) => Tool;
 
 /**
  * Static tool registry.
@@ -19,21 +19,21 @@ export type ToolFactory = (workspace: string | null, allowedDir: string | null) 
  */
 export const TOOL_FACTORIES: Record<string, ToolFactory> = {
   // File tools
-  read_file: (workspace, allowedDir) => new ReadFileTool(workspace, allowedDir),
-  write_file: (workspace, allowedDir) => new WriteFileTool(workspace, allowedDir),
-  edit_file: (workspace, allowedDir) => new EditFileTool(workspace, allowedDir),
-  list_dir: (workspace, allowedDir) => new ListDirTool(workspace, allowedDir),
+  read_file: (workspace, allowedDirs) => new ReadFileTool(workspace, allowedDirs),
+  write_file: (workspace, allowedDirs) => new WriteFileTool(workspace, allowedDirs),
+  edit_file: (workspace, allowedDirs) => new EditFileTool(workspace, allowedDirs),
+  list_dir: (workspace, allowedDirs) => new ListDirTool(workspace, allowedDirs),
 
   // Memo tools
-  memo_read: (workspace, allowedDir) => new MemoReadTool(workspace, allowedDir),
-  memo_write: (workspace, allowedDir) => new MemoWriteTool(workspace, allowedDir),
-  memo_append: (workspace, allowedDir) => new MemoAppendTool(workspace, allowedDir),
-  memo_delete: (workspace, allowedDir) => new MemoDeleteTool(workspace, allowedDir),
-  memo_list: (workspace, allowedDir) => new MemoListTool(workspace, allowedDir),
+  memo_read: (workspace, allowedDirs) => new MemoReadTool(workspace, allowedDirs),
+  memo_write: (workspace, allowedDirs) => new MemoWriteTool(workspace, allowedDirs),
+  memo_append: (workspace, allowedDirs) => new MemoAppendTool(workspace, allowedDirs),
+  memo_delete: (workspace, allowedDirs) => new MemoDeleteTool(workspace, allowedDirs),
+  memo_list: (workspace, allowedDirs) => new MemoListTool(workspace, allowedDirs),
 
   // Photo tools
-  photo_save: (workspace, allowedDir) => new PhotoSaveTool(workspace, allowedDir),
-  photo_retrieve: (workspace, allowedDir) => new PhotoRetrieveTool(workspace, allowedDir),
+  photo_save: (workspace, allowedDirs) => new PhotoSaveTool(workspace, allowedDirs),
+  photo_retrieve: (workspace, allowedDirs) => new PhotoRetrieveTool(workspace, allowedDirs),
   photo_delete: () => new PhotoDeleteTool(),
 
   // Contact tools
@@ -63,9 +63,8 @@ export const TOOL_FACTORIES: Record<string, ToolFactory> = {
 export function createToolByName(
   toolName: string,
   workspace: string | null,
-  allowedDir: string | null
+  allowedDirs: string[] | null
 ): Tool | null {
   const factory = TOOL_FACTORIES[toolName];
-  return factory ? factory(workspace, allowedDir) : null;
+  return factory ? factory(workspace, allowedDirs) : null;
 }
-

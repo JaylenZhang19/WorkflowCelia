@@ -7,10 +7,9 @@
   "agent": {
     "workDir": "./.agent-work",
     "skillsDir": "./skills",
-    "allowedDir": "./.agent-work",
+    "allowedDir": ["./.agent-work", "./skills"],
     "maxSteps": 20,
     "restrictToWorkspace": true,
     "heartbeatInterval": 30
   }
 }
-

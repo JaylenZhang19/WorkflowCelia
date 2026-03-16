@@ -59,7 +59,7 @@ npm run start -- --config config.json "你的问题"
 - `model.apiUrl` / `model.apiKey` / `model.modelName`
 - `agent.workDir`：Agent 工作目录（会自动创建）
 - `agent.skillsDir`：技能目录（用于加载 `<skillFolder>/SKILL.md`）
-- `agent.allowedDir`：工具允许操作的目录（可选；用于限制文件读写范围）
+- `agent.allowedDir`：工具允许操作的目录（可选；用于限制文件读写范围）。支持字符串或字符串数组（多个允许目录）
 - `agent.maxSteps`：最大步数（默认 20）
 - `agent.restrictToWorkspace`：是否限制在工作空间内（默认 `true`）
 
@@ -137,7 +137,7 @@ npm run start -- --config config.json "你的问题"
 - 代码只放在 `src/`（入口保留 `main.ts`）
 - 当前编译产物为 **CommonJS**（`tsconfig.json`：`module: "commonjs"`）；不要混用 ESM
 - 配置解析规则：
-  - `agent.workDir/skillsDir/allowedDir` 均以 **config 文件所在目录** 为基准解析为绝对路径
+  - `agent.workDir/skillsDir/allowedDir` 均以 **config 文件所在目录** 为基准解析为绝对路径（数组会逐项解析）
   - 需要新增配置字段时：先更新 `src/env/ProjectContext.ts` 类型，再更新 `src/config/loadConfig.ts` 校验与默认值
   - 工具配置新增字段时：同步更新 `src/config/loadToolsConfig.ts`
 
@@ -182,7 +182,7 @@ npm run start -- --config config.json "hello"
 - `src/mockapps/<appName>/<AppName>App.ts`
 
 建议包含：
-- 应用类（无状态或仅依赖 `workspace/allowedDir`）
+- 应用类（无状态或仅依赖 `workspace/allowedDir(s)`）
 - 数据存储目录：`agent.workDir/mockapps/<appName>/`
 - 最小功能接口：`read` / `write` / `list`（按需扩展 `append` / `delete` / `search`）
 

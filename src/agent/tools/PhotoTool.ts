@@ -16,7 +16,7 @@ export class PhotoSaveTool extends Tool {
     required: ['sourceUrlOrPath']
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
@@ -43,7 +43,7 @@ export class PhotoRetrieveTool extends Tool {
     required: []
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 

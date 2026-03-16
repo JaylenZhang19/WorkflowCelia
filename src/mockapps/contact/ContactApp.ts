@@ -1,4 +1,4 @@
-import { FileUtil } from '../../utils';
+import { FileUtil, isPathAllowed } from '../../utils';
 import { ProjectContext } from '../../env/ProjectContext';
 import * as path from 'path';
 
@@ -24,8 +24,8 @@ export class ContactApp {
     }
     const dir = path.join(workspace, 'mockapps', 'Contact');
     
-    const allowedDir = context.paths.allowedDir;
-    if (allowedDir && !dir.startsWith(allowedDir)) {
+    const allowedDirs = context.paths.allowedDirs;
+    if (!isPathAllowed(dir, allowedDirs)) {
       throw new Error('Permission Denied: Contact storage is outside allowed directory.');
     }
     if (!FileUtil.exists(dir)) {

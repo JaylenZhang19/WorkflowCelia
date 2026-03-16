@@ -15,13 +15,13 @@ export class MemoReadTool extends Tool {
     required: ['name']
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
   async execute(args: { name: string }): Promise<string> {
     try {
-      const app = new MemoApp(this.workspace, this.allowedDir);
+      const app = new MemoApp(this.workspace, this.allowedDirs);
       return app.readMemo(args.name);
     } catch (e) {
       return `Error reading memo: ${e instanceof Error ? e.message : String(e)}`;
@@ -44,13 +44,13 @@ export class MemoWriteTool extends Tool {
     required: ['content']
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
   async execute(args: { name?: string; content: string }): Promise<string> {
     try {
-      const app = new MemoApp(this.workspace, this.allowedDir);
+      const app = new MemoApp(this.workspace, this.allowedDirs);
       const filename = app.writeMemo({ name: args.name, content: args.content });
       return `Memo written: ${filename}`;
     } catch (e) {
@@ -74,13 +74,13 @@ export class MemoAppendTool extends Tool {
     required: ['name', 'content']
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
   async execute(args: { name: string; content: string }): Promise<string> {
     try {
-      const app = new MemoApp(this.workspace, this.allowedDir);
+      const app = new MemoApp(this.workspace, this.allowedDirs);
       const filename = app.appendMemo({ name: args.name, content: args.content });
       return `Memo appended: ${filename}`;
     } catch (e) {
@@ -103,13 +103,13 @@ export class MemoDeleteTool extends Tool {
     required: ['name']
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
   async execute(args: { name: string }): Promise<string> {
     try {
-      const app = new MemoApp(this.workspace, this.allowedDir);
+      const app = new MemoApp(this.workspace, this.allowedDirs);
       const filename = app.deleteMemo(args.name);
       return `Memo deleted: ${filename}`;
     } catch (e) {
@@ -130,13 +130,13 @@ export class MemoListTool extends Tool {
     required: []
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) {
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) {
     super();
   }
 
   async execute(): Promise<string> {
     try {
-      const app = new MemoApp(this.workspace, this.allowedDir);
+      const app = new MemoApp(this.workspace, this.allowedDirs);
       const items = app.listMemos();
       return items.length > 0 ? items.join('\n') : 'No memos found';
     } catch (e) {

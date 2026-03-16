@@ -35,7 +35,7 @@ export class AgentCore {
     this.skillLoader = new SkillLoader(ctx.paths.skillsDir);
     this.toolsManager = new ToolsManager(
       this.workspace,
-      ctx.paths.allowedDir,
+      ctx.paths.allowedDirs,
       toolsConfig.tools
     );
     this.heartbeat = new HeartbeatScheduler({

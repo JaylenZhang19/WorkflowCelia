@@ -1,12 +1,13 @@
+import path from 'path';
 import { Tool } from './BaseTool';
-import { FileUtil } from '../../utils';
+import { FileUtil, isPathAllowed } from '../../utils';
 
-function resolvePath(pathStr: string, workspace: string | null, allowedDir: string | null): string {
+function resolvePath(pathStr: string, workspace: string | null, allowedDirs: string[] | null): string {
   let p = pathStr;
 
   // 1. 处理相对路径
-  if (!p.startsWith('/') && workspace) {
-    p = `${workspace}/${p}`;
+  if (!path.isAbsolute(p) && workspace) {
+    p = path.join(workspace, p);
   }
 
   // 2. 规范化路径
@@ -14,9 +15,10 @@ function resolvePath(pathStr: string, workspace: string | null, allowedDir: stri
   if (p.includes('..')) {
     throw new Error("Path contains '..' which is restricted for security.");
   }
+  p = path.resolve(p);
 
   // 3. 权限范围检查
-  if (allowedDir && !p.startsWith(allowedDir)) {
+  if (!isPathAllowed(p, allowedDirs)) {
     throw new Error(`Permission Denied: Path ${pathStr} is outside allowed directory.`);
   }
 
@@ -37,11 +39,11 @@ export class ReadFileTool extends Tool {
     "required": ["path"]
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) { super(); }
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) { super(); }
 
   async execute(args: { path: string }): Promise<string> {
     try {
-      const filePath = resolvePath(args.path, this.workspace, this.allowedDir);
+      const filePath = resolvePath(args.path, this.workspace, this.allowedDirs);
 
       if (!FileUtil.exists(filePath)) return `Error: File not found: ${args.path}`;
 
@@ -70,11 +72,11 @@ export class WriteFileTool extends Tool {
     "required": ["path", "content"]
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) { super(); }
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) { super(); }
 
   async execute(args: { path: string, content: string }): Promise<string> {
     try {
-      const filePath = resolvePath(args.path, this.workspace, this.allowedDir);
+      const filePath = resolvePath(args.path, this.workspace, this.allowedDirs);
 
       // 提取父目录路径
       const lastSlashIndex = filePath.lastIndexOf('/');
@@ -111,11 +113,11 @@ export class EditFileTool extends Tool {
     "required": ["path", "old_text", "new_text"]
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) { super(); }
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) { super(); }
 
   async execute(args: { path: string, old_text: string, new_text: string }): Promise<string> {
     try {
-      const filePath = resolvePath(args.path, this.workspace, this.allowedDir);
+      const filePath = resolvePath(args.path, this.workspace, this.allowedDirs);
       if (!FileUtil.exists(filePath)) return `Error: File not found: ${args.path}`;
 
       let content = FileUtil.readTextFile(filePath);
@@ -154,11 +156,11 @@ export class ListDirTool extends Tool {
     "required": ["path"]
   };
 
-  constructor(private workspace: string | null, private allowedDir: string | null) { super(); }
+  constructor(private workspace: string | null, private allowedDirs: string[] | null) { super(); }
 
   async execute(args: { path: string }): Promise<string> {
     try {
-      const dirPath = resolvePath(args.path, this.workspace, this.allowedDir);
+      const dirPath = resolvePath(args.path, this.workspace, this.allowedDirs);
 
       if (!FileUtil.exists(dirPath)) return `Error: Directory not found: ${args.path}`;
       if (!FileUtil.isDirectory(dirPath)) return `Error: Not a directory: ${args.path}`;

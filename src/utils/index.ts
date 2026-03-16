@@ -4,3 +4,4 @@
  */
 export * from './Logger';
 export * from './FileUtil';
+export * from './PathGuard';

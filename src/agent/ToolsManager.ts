@@ -8,7 +8,7 @@ import { createToolByName } from './toolRegistry';
  */
 export class ToolsManager {
   private workspace: string | null = null;
-  private allowedDir: string | null = null;
+  private allowedDirs: string[] | null = null;
   private tools: Map<string, Tool> = new Map();
   private toolConfig: ToolConfigItem[] = [];
   private initialized: boolean = false;
@@ -16,17 +16,17 @@ export class ToolsManager {
   /**
    * 初始化工具管理器
    * @param workspace 基础工作目录 (通常为 context.filesDir)
-   * @param allowedDir 允许操作的目录限制
+   * @param allowedDirs 允许操作的目录限制
    * @param toolConfig 工具配置文件
    * @param projectRoot 项目根目录
    */
   constructor(
     workspace: string | null = null,
-    allowedDir: string | null = null,
+    allowedDirs: string[] | null = null,
     toolConfig: ToolConfigItem[] = []
   ) {
     this.workspace = workspace;
-    this.allowedDir = allowedDir;
+    this.allowedDirs = allowedDirs;
     this.toolConfig = toolConfig;
   }
 
@@ -38,7 +38,7 @@ export class ToolsManager {
 
     for (const item of this.toolConfig) {
       if (!item.enabled) continue;
-      const tool = createToolByName(item.name, this.workspace, this.allowedDir);
+      const tool = createToolByName(item.name, this.workspace, this.allowedDirs);
       if (!tool) {
         logger.warn('ToolsManager', `Tool '${item.name}' not found in static registry (enabled=true)`);
         continue;

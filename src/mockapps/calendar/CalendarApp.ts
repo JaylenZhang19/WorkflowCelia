@@ -1,4 +1,4 @@
-import { FileUtil } from '../../utils';
+import { FileUtil, isPathAllowed } from '../../utils';
 import { ProjectContext } from '../../env/ProjectContext';
 import * as path from 'path';
 
@@ -38,8 +38,8 @@ export class CalendarApp {
     }
     const dir = path.join(workspace, 'mockapps', 'Calendar');
     
-    const allowedDir = context.paths.allowedDir;
-    if (allowedDir && !dir.startsWith(allowedDir)) {
+    const allowedDirs = context.paths.allowedDirs;
+    if (!isPathAllowed(dir, allowedDirs)) {
       throw new Error('Permission Denied: Calendar storage is outside allowed directory.');
     }
     if (!FileUtil.exists(dir)) {
