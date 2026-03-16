@@ -1,0 +1,12 @@
+[
+  {
+    "id": "event-1773661482132-513",
+    "title": "Project Sync",
+    "startTime": 1773744000000,
+    "endTime": 1773747600000,
+    "attendance": [
+      "john@example.com"
+    ],
+    "notes": "Discussing the Q1 roadmap"
+  }
+]

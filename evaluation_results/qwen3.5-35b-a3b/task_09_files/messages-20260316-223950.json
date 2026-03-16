@@ -1,0 +1,90 @@
+[
+  {
+    "role": "system",
+    "content": "你是一个深耕 HarmonyOS 生态的强大智能助手。你运行在应用的沙箱环境中，致力于通过调用应用能力和管理应用数据来协助用户。\n\n【环境信息】\n应用空间(Context): 所有操作仅限于当前应用的沙箱目录 /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work。\n\n- 技能目录: /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/skills\n\n技能结构: 每个技能为一个独立目录，包含 SKILL.md 指引和可选的 referecens/\n\n【技能】\n在你回复用户请求时: 你需要先审视一遍<available_skills> <description>\n- 如果下列中的任一一个skill和用户的请求相匹配时，你使用工具 read_file 去读取对应skill的 SKILL.md 文件，并根据它的指导完成用户的请求。\n- 如果多个skill符合用户的请求: 选择最贴切的那个，读取并根据它的指引进行。\n- 如果没有任何一个skill符合用户的请求: 不要读取任何一个skill的 SKILL.md 文件。\n{}\n\n【通用能力】\n当没有匹配的技能时，可以直接完成通用任务，你拥有管理应用内数据的通用权限:\n\n- 文件操作: 在沙箱内进行文件的读写、重命名、删除（符合 HarmonyOS 安全规范）。\n\n- 目录管理：创建文件夹、列出文件\n\n【工具使用规则】\n1. 技能优先，匹配技能后，先使用 read_file 读取对应 SKILL.md 明确业务边界，再进行后续操作。\n2. 无匹配技能和工具时：直接回复\n3. 变量跨步骤保留\n4. 无脚本原则， HarmonyOS 环境下严禁执行 Shell 命令或动态脚本。所有操作必须通过工具映射到 ArkTS 接口。\n5. 工具调用失败时，分析错误后换方法重试\n6. 主观判断由你直接思考完成，不写代码判断\n7. 【HEARTBEAT 调度】如果用户要求配置定时任务或条件触发任务（例如定期检查邮件），你需要使用相关工具修改沙箱根目录（/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work）下的 HEARTBEAT.md 文件。将触发条件和发生时需要执行的具体 prompt / task 写进 HEARTBEAT.md 文件中（最好具备一定的格式说明），这个文件中的任务后续会被调度器解析并自动执行。不要试图在当前对话内停留或写循环脚本。"
+  },
+  {
+    "role": "system",
+    "content": "当前时间: 3/16/2026, 10:39:34 PM, timestamp: 1773671974156"
+  },
+  {
+    "role": "user",
+    "content": "Question: Create a project structure with: src/ directory, src/main.py with hello world, README.md with project title, and .gitignore ignoring pycache."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_b649e0c1c86a442a935393e6",
+        "type": "function",
+        "function": {
+          "name": "write_file",
+          "arguments": "{\"path\":\"/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/src/main.py\",\"content\":\"print(\\\"Hello, World!\\\")\\n\"}"
+        }
+      },
+      {
+        "id": "call_8973a2f8706547c39c760d6d",
+        "type": "function",
+        "function": {
+          "name": "write_file",
+          "arguments": "{\"path\":\"/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/README.md\",\"content\":\"# Project Title\\n\\nThis is a sample project.\\n\"}"
+        }
+      },
+      {
+        "id": "call_51c1178a0c8e4d8081d4da77",
+        "type": "function",
+        "function": {
+          "name": "write_file",
+          "arguments": "{\"path\":\"/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/.gitignore\",\"content\":\"__pycache__/\\n*.pyc\\n\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_b649e0c1c86a442a935393e6",
+    "name": "write_file",
+    "content": "Successfully wrote 23 characters to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/src/main.py"
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_8973a2f8706547c39c760d6d",
+    "name": "write_file",
+    "content": "Successfully wrote 43 characters to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/README.md"
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_51c1178a0c8e4d8081d4da77",
+    "name": "write_file",
+    "content": "Successfully wrote 19 characters to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/.gitignore"
+  },
+  {
+    "role": "assistant",
+    "content": "I've successfully created the project structure with:\n\n1. **src/ directory** - Created automatically when writing main.py\n2. **src/main.py** - Contains \"Hello, World!\" print statement\n3. **README.md** - Contains project title and description\n4. **.gitignore** - Configured to ignore __pycache__ and .pyc files\n\nThe project structure is now set up in the `/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work` directory."
+  },
+  {
+    "role": "system",
+    "content": "请继续完成任务，或给出最终回复（当你已经完全完成用户的请求、给出了最终答案，或者确认无法继续执行时，必须调用 finish 工具结束）。"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_3c81c2b4c62d4ae88ee27c47",
+        "type": "function",
+        "function": {
+          "name": "finish",
+          "arguments": "{\"result\":\"项目结构已成功创建，包含：\\n- src/ 目录\\n- src/main.py（含 Hello World 代码）\\n- README.md（含项目标题）\\n- .gitignore（忽略 pycache）\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_3c81c2b4c62d4ae88ee27c47",
+    "name": "finish",
+    "content": "项目结构已成功创建，包含：\n- src/ 目录\n- src/main.py（含 Hello World 代码）\n- README.md（含项目标题）\n- .gitignore（忽略 pycache）"
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "role": "system",
+    "content": "你是一个深耕 HarmonyOS 生态的强大智能助手。你运行在应用的沙箱环境中，致力于通过调用应用能力和管理应用数据来协助用户。\n\n【环境信息】\n应用空间(Context): 所有操作仅限于当前应用的沙箱目录 /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work。\n\n- 技能目录: /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/skills\n\n技能结构: 每个技能为一个独立目录，包含 SKILL.md 指引和可选的 referecens/\n\n【技能】\n在你回复用户请求时: 你需要先审视一遍<available_skills> <description>\n- 如果下列中的任一一个skill和用户的请求相匹配时，你使用工具 read_file 去读取对应skill的 SKILL.md 文件，并根据它的指导完成用户的请求。\n- 如果多个skill符合用户的请求: 选择最贴切的那个，读取并根据它的指引进行。\n- 如果没有任何一个skill符合用户的请求: 不要读取任何一个skill的 SKILL.md 文件。\n{}\n\n【通用能力】\n当没有匹配的技能时，可以直接完成通用任务，你拥有管理应用内数据的通用权限:\n\n- 文件操作: 在沙箱内进行文件的读写、重命名、删除（符合 HarmonyOS 安全规范）。\n\n- 目录管理：创建文件夹、列出文件\n\n【工具使用规则】\n1. 技能优先，匹配技能后，先使用 read_file 读取对应 SKILL.md 明确业务边界，再进行后续操作。\n2. 无匹配技能和工具时：直接回复\n3. 变量跨步骤保留\n4. 无脚本原则， HarmonyOS 环境下严禁执行 Shell 命令或动态脚本。所有操作必须通过工具映射到 ArkTS 接口。\n5. 工具调用失败时，分析错误后换方法重试\n6. 主观判断由你直接思考完成，不写代码判断\n7. 【HEARTBEAT 调度】如果用户要求配置定时任务或条件触发任务（例如定期检查邮件），你需要使用相关工具修改沙箱根目录（/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work）下的 HEARTBEAT.md 文件。将触发条件和发生时需要执行的具体 prompt / task 写进 HEARTBEAT.md 文件中（最好具备一定的格式说明），这个文件中的任务后续会被调度器解析并自动执行。不要试图在当前对话内停留或写循环脚本。"
+  },
+  {
+    "role": "system",
+    "content": "当前时间: 3/16/2026, 10:11:13 PM, timestamp: 1773670273458"
+  },
+  {
+    "role": "user",
+    "content": "Question: Write a professional email declining a meeting request due to schedule conflicts. Save it to email_draft.txt."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_e13aba232ed1475dafea610d",
+        "type": "function",
+        "function": {
+          "name": "write_file",
+          "arguments": "{\"path\":\"/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/email_draft.txt\",\"content\":\"Subject: Regretfully Unable to Attend Scheduled Meeting\\n\\nDear [Recipient Name],\\n\\nThank you for inviting me to the upcoming meeting regarding [Meeting Topic/Purpose]. I appreciate you thinking of me for this discussion.\\n\\nUnfortunately, due to existing schedule commitments that cannot be rescheduled, I will be unable to attend the meeting at the scheduled time. I sincerely apologize for any inconvenience this may cause.\\n\\nI remain very interested in contributing to this initiative and would be happy to:\\n- Review any materials or agendas prior to the meeting\\n- Provide my input via email before the discussion\\n- Schedule an alternative time if your team's availability allows\\n- Connect with a colleague who might be able to represent our perspective\\n\\nPlease let me know if there are other ways I can support this effort, and I look forward to finding a mutually convenient time to connect soon.\\n\\nThank you for your understanding.\\n\\nBest regards,\\n[Your Name]\\n[Your Title/Position]\\n[Your Contact Information]\\n\\n---\\nNote: Please customize the bracketed information with specific details before sending.\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_e13aba232ed1475dafea610d",
+    "name": "write_file",
+    "content": "Successfully wrote 1099 characters to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/email_draft.txt"
+  },
+  {
+    "role": "assistant",
+    "content": "I've created a professional email declining a meeting request due to schedule conflicts and saved it to `email_draft.txt` in your application's working directory.\n\nThe email template includes:\n- A polite subject line\n- Appreciation for the invitation\n- Clear explanation of the scheduling conflict\n- Alternative suggestions (reviewing materials, providing input via email, rescheduling, or connecting with a colleague)\n- Professional closing with placeholders for customization\n\nYou can now edit this draft to add specific details like recipient name, meeting topic, your name, and other relevant information before sending it through the email system if needed."
+  },
+  {
+    "role": "system",
+    "content": "请继续完成任务，或给出最终回复（当你已经完全完成用户的请求、给出了最终答案，或者确认无法继续执行时，必须调用 finish 工具结束）。"
+  },
+  {
+    "role": "assistant",
+    "content": "The task is complete. I have successfully created a professional email declining a meeting request due to schedule conflicts and saved it to `email_draft.txt` in the application's working directory at `/Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/email_draft.txt`.\n\n",
+    "tool_calls": [
+      {
+        "id": "call_e27a26db92cb46868a2efb8b",
+        "type": "function",
+        "function": {
+          "name": "finish",
+          "arguments": "{\"result\":\"Successfully created a professional email declining a meeting request due to schedule conflicts. The email has been saved to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/email_draft.txt. The template includes polite language, explanation of scheduling conflict, alternative suggestions for collaboration, and placeholders for customization with specific details like recipient name, meeting topic, and your contact information.\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_e27a26db92cb46868a2efb8b",
+    "name": "finish",
+    "content": "Successfully created a professional email declining a meeting request due to schedule conflicts. The email has been saved to /Users/jinglun/repository/DevEcoStudioProjects/WorkflowCelia/.agent-work/email_draft.txt. The template includes polite language, explanation of scheduling conflict, alternative suggestions for collaboration, and placeholders for customization with specific details like recipient name, meeting topic, and your contact information."
+  }
+]
