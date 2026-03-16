@@ -60,6 +60,7 @@ npm run start -- --config config.json "你的问题"
 - `agent.workDir`：Agent 工作目录（会自动创建）
 - `agent.skillsDir`：技能目录（用于加载 `<skillFolder>/SKILL.md`）
 - `agent.allowedDir`：工具允许操作的目录（可选；用于限制文件读写范围）。支持字符串或字符串数组（多个允许目录）
+- `agent.resetHistoryOnFinish`：是否在每次任务完成后清空历史（默认 `true`，日志始终按时间戳保存）
 - `agent.maxSteps`：最大步数（默认 20）
 - `agent.restrictToWorkspace`：是否限制在工作空间内（默认 `true`）
 

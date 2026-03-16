@@ -26,11 +26,14 @@ export class AgentCore {
   private initialized: boolean = false;
   private queue: AgentQueue = new AgentQueue();
   private heartbeat: HeartbeatScheduler;
+  private resetHistoryOnFinish: boolean;
+  private sessionLogPath: string | null = null;
 
   constructor(workspace: string) {
     this.workspace = workspace;
     const ctx = ProjectContext.getInstance();
     const toolsConfig: ToolsConfig = loadToolsConfig(ctx.paths.toolsConfigPath);
+    this.resetHistoryOnFinish = ctx.config.agent.resetHistoryOnFinish ?? true;
 
     this.skillLoader = new SkillLoader(ctx.paths.skillsDir);
     this.toolsManager = new ToolsManager(
@@ -222,9 +225,14 @@ ${skillMetadata}
               timestamp: Date.now()
             });
 
-            // 更新长时记忆
-            this.conversationHistory.push(...history.slice(initialHistoryLen));
+            if (!this.resetHistoryOnFinish) {
+              // 更新长时记忆
+              this.conversationHistory.push(...history.slice(initialHistoryLen));
+            }
             await this.saveLogs(history);
+            if (this.resetHistoryOnFinish) {
+              this.initSystemPrompt();
+            }
             return finalResult;
           }
         }
@@ -243,8 +251,13 @@ ${skillMetadata}
         });
       }
     }
+    if (!this.resetHistoryOnFinish) {
+      this.conversationHistory.push(...history.slice(initialHistoryLen));
+    }
     await this.saveLogs(history);
-    this.conversationHistory.push(...history.slice(initialHistoryLen));
+    if (this.resetHistoryOnFinish) {
+      this.initSystemPrompt();
+    }
     onStep?.({
       type: 'final',
       title: `任务超时`,
@@ -262,8 +275,25 @@ ${skillMetadata}
     this.heartbeat.stop();
   }
 
+  private formatTimestamp(date: Date): string {
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  }
+
+  private getLogPath(): string {
+    if (!this.resetHistoryOnFinish) {
+      if (!this.sessionLogPath) {
+        const ts = this.formatTimestamp(new Date());
+        this.sessionLogPath = `${this.workspace}/messages-${ts}.json`;
+      }
+      return this.sessionLogPath;
+    }
+    const ts = this.formatTimestamp(new Date());
+    return `${this.workspace}/messages-${ts}.json`;
+  }
+
   private async saveLogs(history: Message[]): Promise<void> {
-    const logPath = `${this.workspace}/messages.json`;
+    const logPath = this.getLogPath();
     try {
       FileUtil.writeTextFile(logPath, JSON.stringify(history, null, 2));
       logger.info(TAG, `saveLogs, 日志写入成功 logPath: ${logPath}`);

@@ -58,6 +58,7 @@ export function loadProjectConfig(configPath: string): ProjectConfig {
   const maxSteps = agent.maxSteps == null ? 20 : Number(agent.maxSteps);
   const restrictToWorkspace = agent.restrictToWorkspace == null ? true : Boolean(agent.restrictToWorkspace);
   const heartbeatInterval = agent.heartbeatInterval == null ? 30 : Number(agent.heartbeatInterval);
+  const resetHistoryOnFinish = agent.resetHistoryOnFinish == null ? true : Boolean(agent.resetHistoryOnFinish);
 
   return {
     model: {
@@ -71,7 +72,8 @@ export function loadProjectConfig(configPath: string): ProjectConfig {
       allowedDir,
       maxSteps: Number.isFinite(maxSteps) && maxSteps > 0 ? maxSteps : 20,
       restrictToWorkspace,
-      heartbeatInterval: Number.isFinite(heartbeatInterval) && heartbeatInterval > 0 ? heartbeatInterval : 30
+      heartbeatInterval: Number.isFinite(heartbeatInterval) && heartbeatInterval > 0 ? heartbeatInterval : 30,
+      resetHistoryOnFinish
     }
   };
 }

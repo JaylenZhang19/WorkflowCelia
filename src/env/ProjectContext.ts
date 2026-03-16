@@ -13,6 +13,7 @@ export interface AgentConfig {
   maxSteps?: number;
   restrictToWorkspace?: boolean;
   heartbeatInterval?: number;
+  resetHistoryOnFinish?: boolean;
 }
 
 export interface ProjectConfig {

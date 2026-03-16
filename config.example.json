@@ -8,6 +8,7 @@
     "workDir": "./.agent-work",
     "skillsDir": "./skills",
     "allowedDir": ["./.agent-work", "./skills"],
+    "resetHistoryOnFinish": true,
     "maxSteps": 20,
     "restrictToWorkspace": true,
     "heartbeatInterval": 30
