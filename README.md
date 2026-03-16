@@ -8,6 +8,23 @@
 
 ---
 
+## 0) 评测框架说明（当前实现）
+
+目前评测框架包含 **自动化评分** 能力，已从 PinchBench 的任务描述迁移并用 TypeScript 重写，放在 `evaluation/` 下：
+
+- `evaluation/tasks/`：任务定义（从 PinchBench `skill/tasks` 复制）
+- `evaluation/cli.ts`：评测入口（读取任务输出 + 自动化评分）
+- `evaluation/graders/automated.ts`：各任务的自动化评分实现
+
+已支持的任务类型：
+- `automated`：可直接评分（如 `task_00_sanity`、`task_01_calendar`、`task_08_memory`、`task_09_files`、`task_12_skill_search`）
+- `hybrid`：仅计算自动化部分（如 `task_16_email_triage`、`task_17_email_search`）
+- `llm_judge`：尚未实现 LLM 裁判（目前会标记为不支持）
+
+当前不包含 **自动执行任务** 的 runner，评测依赖你已有的 `evaluation_results/<model>/<task_id>/` 输出。
+
+---
+
 ## 1) 给开发者的：运行方式与核心结构
 
 ### 环境要求
@@ -51,6 +68,31 @@ npm run start -- --config config.json "你的问题"
 ```
 
 > 入口参数：`--config <path>`；也支持环境变量 `PROJECT_CONFIG` 指定配置路径。
+
+### 评测使用（自动化评分）
+
+评测输入目录结构示例（你已有的手动测试产物）：
+
+```
+evaluation_results/
+  qwen3.5-35b-a3b/
+    task_00_sanity/
+      task_00_sanity_messages.json
+    task_01_calendar/
+      messages.json
+      mockapps/Calendar/events.json
+```
+
+运行评测：
+
+```bash
+npm run evaluate -- --results evaluation_results/qwen3.5-35b-a3b
+```
+
+可选参数：
+- `--tasks task_00_sanity,task_01_calendar`
+- `--output evaluation_results/qwen3.5-35b-a3b/report.json`
+- `--tasks-dir evaluation/tasks`
 
 ### 配置文件结构（`config.json`）
 
@@ -120,7 +162,7 @@ npm run start -- --config config.json "你的问题"
 
 ## 2) 给“我自己”的：进度记录与验证要求（新 Session 快速接手）
 
-### 当前进度（截至 2026-03-15）
+### 当前进度（截至 2026-03-17）
 
 - 已完成：将核心代码迁移到 `src/`，并新增配置体系
   - `ProjectContext`（`src/env/ProjectContext.ts`）统一保存 `config` 与解析后的 `paths`
@@ -132,6 +174,10 @@ npm run start -- --config config.json "你的问题"
 - 已完成：`tools.json` 驱动工具启停（静态注册表），不再在运行时动态加载模块
 - 已完成：模拟应用 `mockapps/memo`（备忘录）与对应工具
 - 已完成：心跳逻辑独立化 + 消息队列机制（用户输入与心跳任务串行化）
+- 已完成：新增 `evaluation/` 评测目录，支持对历史结果进行自动化评分
+  - 自动化评分任务：`task_00_sanity`、`task_01_calendar`、`task_08_memory`、`task_09_files`、`task_12_skill_search`
+  - 混合任务：`task_16_email_triage`、`task_17_email_search`（仅自动化部分）
+  - `llm_judge` 暂未接入（后续可扩展）
 
 ### 编码约束（保持一致性）
 
@@ -167,6 +213,7 @@ npm run start -- --config config.json "hello"
 - 仓库根目录遗留空目录 `agent/`、`utils/`（已迁移到 `src/`）
 - 尚无测试用例；如后续引入测试，优先从配置加载与路径限制（`allowedDir`）开始补
 - 更多模拟应用将陆续放入 `src/mockapps`，并通过 `tools.json` 暴露为工具
+- 评测 runner（自动执行任务）暂未实现，仅支持评估已生成的结果目录
 
 ---
 
