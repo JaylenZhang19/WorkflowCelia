@@ -1,0 +1,82 @@
+[
+  {
+    "role": "system",
+    "content": "你是一个深耕 HarmonyOS 生态的强大智能助手。你运行在应用的沙箱环境中，致力于通过调用应用能力和管理应用数据来协助用户。\n\n【环境信息】\n应用空间(Context): 所有操作仅限于当前应用的沙箱目录 /Users/jaylen/repository/WorkflowCelia/.agent-work。\n\n- 技能目录: /Users/jaylen/repository/WorkflowCelia/skills\n\n技能结构: 每个技能为一个独立目录，包含 SKILL.md 指引和可选的 referecens/\n\n【技能】\n在你回复用户请求时: 你需要先审视一遍<available_skills> <description>\n- 如果下列中的任一一个skill和用户的请求相匹配时，你使用工具 read_file 去读取对应skill的 SKILL.md 文件，并根据它的指导完成用户的请求。\n- 如果多个skill符合用户的请求: 选择最贴切的那个，读取并根据它的指引进行。\n- 如果没有任何一个skill符合用户的请求: 不要读取任何一个skill的 SKILL.md 文件。\n{}\n\n【通用能力】\n当没有匹配的技能时，可以直接完成通用任务，你拥有管理应用内数据的通用权限:\n\n- 文件操作: 在沙箱内进行文件的读写、重命名、删除（符合 HarmonyOS 安全规范）。\n\n- 目录管理：创建文件夹、列出文件\n\n【工具使用规则】\n1. 技能优先，匹配技能后，先使用 read_file 读取对应 SKILL.md 明确业务边界，再进行后续操作。\n2. 无匹配技能和工具时：直接回复\n3. 变量跨步骤保留\n4. 无脚本原则， HarmonyOS 环境下严禁执行 Shell 命令或动态脚本。所有操作必须通过工具映射到 ArkTS 接口。\n5. 工具调用失败时，分析错误后换方法重试\n6. 主观判断由你直接思考完成，不写代码判断\n7. 【HEARTBEAT 调度】如果用户要求配置定时任务或条件触发任务（例如定期检查邮件），你需要使用相关工具修改沙箱根目录（/Users/jaylen/repository/WorkflowCelia/.agent-work）下的 HEARTBEAT.md 文件。将触发条件和发生时需要执行的具体 prompt / task 写进 HEARTBEAT.md 文件中（最好具备一定的格式说明），这个文件中的任务后续会被调度器解析并自动执行。不要试图在当前对话内停留或写循环脚本。"
+  },
+  {
+    "role": "system",
+    "content": "当前时间: 3/16/2026, 5:10:43 PM, timestamp: 1773652243958"
+  },
+  {
+    "role": "user",
+    "content": "Question: Use calendar to schedule a meeting for next Tuesday at 3pm with john@example.com. Title it \"Project Sync\" and add a note about discussing the Q1 roadmap."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_dc6a7c96e98a4439838d18ba",
+        "type": "function",
+        "function": {
+          "name": "calendar_read",
+          "arguments": "{}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_dc6a7c96e98a4439838d18ba",
+    "name": "calendar_read",
+    "content": "No calendar events found within the given time range."
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_b3396296e1354f67aed7dc81",
+        "type": "function",
+        "function": {
+          "name": "calendar_add",
+          "arguments": "{\"title\":\"Project Sync\",\"startTime\":1774335600958,\"endTime\":1774339200958,\"attendance\":[\"john@example.com\"],\"notes\":\"Discussing the Q1 roadmap\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_b3396296e1354f67aed7dc81",
+    "name": "calendar_add",
+    "content": "Calendar event 'Project Sync' successfully added."
+  },
+  {
+    "role": "assistant",
+    "content": "The meeting \"Project Sync\" has been successfully scheduled for next Tuesday at 3 PM with john@example.com, including a note about discussing the Q1 roadmap."
+  },
+  {
+    "role": "system",
+    "content": "请继续完成任务，或给出最终回复（当你已经完全完成用户的请求、给出了最终答案，或者确认无法继续执行时，必须调用 finish 工具结束）。"
+  },
+  {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_f189934200454d6b8394fcbb",
+        "type": "function",
+        "function": {
+          "name": "finish",
+          "arguments": "{\"raw_arguments\":\"{\\\"result\\\": \\\"Successfully scheduled the meeting \\\\\\\"Project Sync\\\\\\\" for next Tuesday at 3 PM with john@example.com. The event includes a note about discussing the Q1 roadmap.\",\"error\":\"PARSE_FAILED\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_f189934200454d6b8394fcbb",
+    "name": "finish",
+    "content": "Error: Invalid parameters: missing required result"
+  }
+]
