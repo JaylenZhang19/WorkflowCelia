@@ -12,9 +12,21 @@
 
 目前评测框架包含 **自动化评分** 能力，已从 PinchBench 的任务描述迁移并用 TypeScript 重写，放在 `evaluation/` 下：
 
-- `evaluation/tasks/`：任务定义（从 PinchBench `skill/tasks` 复制）
+- `evaluation/tasks/`：任务定义（从 PinchBench `skill/tasks` 复制后逐步整理）
 - `evaluation/cli.ts`：评测入口（读取任务输出 + 自动化评分）
 - `evaluation/graders/automated.ts`：各任务的自动化评分实现
+
+`evaluation/tasks/` 结构，把 prompt/元信息、自动化检查、资源文件拆开，便于阅读与复用：
+
+```
+evaluation/tasks/task_08_memory/
+  task_08_memory.md           # prompt / grading criteria / metadata
+  automated_check.ts          # automated grader entry (optional)
+  workspace/                  # resource files for the task (optional)
+    notes.md
+```
+
+> 说明：新结构任务在 frontmatter 中可声明 `workspace_dir`（如 `workspace`）和 `automated_check`（如 `automated_check.ts`）。评测时如果存在 `automated_check`，会优先加载该文件进行评分。
 
 已支持的任务类型：
 - `automated`：可直接评分（如 `task_00_sanity`、`task_01_calendar`、`task_08_memory`、`task_09_files`、`task_12_skill_search`）
