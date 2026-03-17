@@ -9,10 +9,21 @@ export class TaskLoader {
   constructor(private tasksDir: string) {}
 
   async loadAll(): Promise<Task[]> {
-    const entries = await fs.readdir(this.tasksDir);
+    const entries = await fs.readdir(this.tasksDir, { withFileTypes: true });
     const taskFiles = entries
-      .filter((name) => name.startsWith("task_") && name.endsWith(".md"))
-      .map((name) => path.join(this.tasksDir, name))
+      .flatMap((entry) => {
+        const name = entry.name;
+        if (!name.startsWith("task_")) {
+          return [];
+        }
+        if (entry.isFile() && name.endsWith(".md")) {
+          return [path.join(this.tasksDir, name)];
+        }
+        if (entry.isDirectory()) {
+          return [path.join(this.tasksDir, name, `${name}.md`)];
+        }
+        return [];
+      })
       .sort();
 
     const tasks: Task[] = [];
@@ -35,6 +46,7 @@ export class TaskLoader {
     const metadata = parseYaml(frontmatterText) as Record<string, unknown>;
     const sections = parseSections(bodyText);
     const gradingCriteria = extractChecklist(sections.get("Grading Criteria") ?? "");
+    const workspaceFiles = normalizeWorkspaceFiles(metadata.workspace_files);
 
     return {
       id: String(metadata.id ?? ""),
@@ -42,13 +54,36 @@ export class TaskLoader {
       category: String(metadata.category ?? ""),
       gradingType: (metadata.grading_type as Task["gradingType"]) ?? "automated",
       timeoutSeconds: Number(metadata.timeout_seconds ?? 120),
-      workspaceFiles: (metadata.workspace_files as Task["workspaceFiles"]) ?? [],
+      workspaceFiles,
+      workspaceDir: typeof metadata.workspace_dir === "string" ? metadata.workspace_dir : undefined,
+      automatedCheck: typeof metadata.automated_check === "string" ? metadata.automated_check : undefined,
       prompt: (sections.get("Prompt") ?? "").trim(),
       expectedBehavior: (sections.get("Expected Behavior") ?? "").trim(),
       gradingCriteria,
+      taskDir: path.dirname(filePath),
       filePath,
     };
   }
+}
+
+function normalizeWorkspaceFiles(value: unknown): Task["workspaceFiles"] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const files: Task["workspaceFiles"] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const filePath = typeof record.path === "string" ? record.path : "";
+    if (!filePath) {
+      continue;
+    }
+    const content = typeof record.content === "string" ? record.content : undefined;
+    files.push({ path: filePath, content });
+  }
+  return files;
 }
 
 function parseSections(body: string): Map<string, string> {

@@ -1,9 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { GradeContext, GradeResult } from "../types";
 import { extractToolCalls, hasAssistantResponse } from "../messages";
 
 export async function gradeAutomated(ctx: GradeContext): Promise<GradeResult | null> {
+  const external = await tryLoadExternalGrader(ctx);
+  if (external) {
+    return external;
+  }
+
   switch (ctx.task.id) {
     case "task_00_sanity":
       return gradeSanity(ctx);
@@ -22,6 +28,26 @@ export async function gradeAutomated(ctx: GradeContext): Promise<GradeResult | n
     default:
       return null;
   }
+}
+
+async function tryLoadExternalGrader(ctx: GradeContext): Promise<GradeResult | null> {
+  const rel = ctx.task.automatedCheck;
+  if (!rel) {
+    return null;
+  }
+  const checkPath = path.join(ctx.task.taskDir, rel);
+  try {
+    await fs.access(checkPath);
+  } catch {
+    return null;
+  }
+
+  const mod = await import(pathToFileURL(checkPath).href);
+  const gradeFn: unknown = (mod as Record<string, unknown>).grade ?? (mod as Record<string, unknown>).default;
+  if (typeof gradeFn !== "function") {
+    throw new Error(`Invalid automated_check export for ${ctx.task.id}: expected 'export function grade(...)' in ${checkPath}`);
+  }
+  return (gradeFn as (ctx: GradeContext) => Promise<GradeResult>)(ctx);
 }
 
 function averageScore(scores: Record<string, number>): number {

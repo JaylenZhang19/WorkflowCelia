@@ -6,10 +6,29 @@ export interface Task {
   category: string;
   gradingType: GradingType;
   timeoutSeconds: number;
-  workspaceFiles: Array<{ path: string; content: string }>;
+  /**
+   * Legacy inline workspace file definitions embedded in task frontmatter.
+   * New-style tasks should prefer putting real files under `workspaceDir`.
+   */
+  workspaceFiles: Array<{ path: string; content?: string }>;
+  /**
+   * New-style tasks: relative folder (from `taskDir`) containing resources.
+   * Example: "workspace" => `${taskDir}/workspace/*`.
+   */
+  workspaceDir?: string;
+  /**
+   * New-style tasks: relative path (from `taskDir`) to an automated grader entry.
+   * Example: "automated_check.ts".
+   */
+  automatedCheck?: string;
   prompt: string;
   expectedBehavior: string;
   gradingCriteria: string[];
+  /**
+   * Directory containing this task's markdown definition.
+   * For legacy tasks, this will be the shared tasks directory.
+   */
+  taskDir: string;
   filePath: string;
 }
 
